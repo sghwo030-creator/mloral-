@@ -3,79 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FNAF Three.js Prototype</title>
+    <title>FNAF Three.js Update - 4 Cameras & AI</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #000;
-            user-select: none;
-        }
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-        }
-        /* UI Overlay */
-        #ui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Supaya mouse tetap bisa dibaca Three.js */
-        }
-        .hud {
-            position: absolute;
-            color: #00ff00;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px #000;
-            padding: 20px;
-        }
-        #power-display { top: 10px; left: 10px; }
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background-color: #000; user-select: none; color: white; }
+        #canvas-container { width: 100vw; height: 100vh; }
         
-        /* Tombol Kontrol Pintu */
-        .btn {
-            position: absolute;
-            pointer-events: auto;
-            background: rgba(30, 30, 30, 0.8);
-            color: white;
-            border: 3px solid #555;
-            padding: 15px 25px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn:active { background: #555; }
-        #btn-left { bottom: 50%; left: 20px; border-left: 5px solid red; }
-        #btn-right { bottom: 50%; right: 20px; border-right: 5px solid red; }
+        /* UI General */
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .hud { position: absolute; color: #e0e0e0; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; padding: 15px; font-family: 'Courier New', monospace; }
+        #power-display { top: 0; left: 0; background: rgba(0,0,0,0.5); border-bottom-right-radius: 10px; }
+        #time-display { top: 0; right: 0; background: rgba(0,0,0,0.5); border-bottom-left-radius: 10px; text-align: right;}
         
-        /* Monitor Kamera */
-        #btn-monitor {
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            background: rgba(0, 0, 200, 0.5);
-            border: 2px solid #00f;
-            text-align: center;
+        /* Buttons */
+        .btn { position: absolute; pointer-events: auto; background: rgba(50, 50, 50, 0.8); color: white; border: 2px solid #888; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; z-index: 11; }
+        .btn:hover { background: rgba(80, 80, 80, 1); border-color: white; }
+        
+        /* Door Buttons position */
+        #btn-left { bottom: 50%; left: 20px; transform: translateY(50%); border-left: 5px solid #555; }
+        #btn-right { bottom: 50%; right: 20px; transform: translateY(50%); border-right: 5px solid #555; }
+        .btn-active { background: #aa0000 !important; border-color: #ffcccc; box-shadow: 0 0 10px rgba(255,0,0,0.5); }
+        
+        /* Monitor Toggle Button */
+        #btn-monitor { bottom: 10px; left: 50%; transform: translateX(-50%); width: 40%; height: 40px; background: rgba(0, 0, 150, 0.3); border: 2px solid #00f; border-radius: 20px; text-align: center; }
+        #btn-monitor:hover { background: rgba(0, 0, 255, 0.5); }
+
+        /* ====== CAMERA SCREEN CSS ====== */
+        #camera-screen { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #051005; /* Dark Green base */
+            pointer-events: auto; z-index: 20; overflow: hidden;
+            border: 10px solid #333; box-sizing: border-box;
         }
-        #camera-screen {
-            display: none;
-            position: absolute;
-            top: 10%;
-            left: 10%;
-            width: 80%;
-            height: 70%;
-            background: #111;
-            border: 5px double #fff;
-            pointer-events: auto;
-            color: white;
-            box-shadow: inset 0 0 100px rgba(255,255,255,0.2);
+        
+        /* Night Vision Static Effect Overlay */
+        #camera-screen::after {
+            content: " "; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUwithfakeeffectAAAABJRU5ErkJggg=='); /* Placeholder for static noise */
+            background-image: repeating-linear-gradient(0deg, rgba(0, 100, 0, 0.05), rgba(0, 100, 0, 0.05) 1px, transparent 1px, transparent 2px);
+            opacity: 0.3; pointer-events: none; animation: grain 0.3s steps(10) infinite;
         }
-        .cam-status { position: absolute; top: 10px; left: 10px; color: red; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes grain { 0%, 100% { transform:translate(0, 0) } 10% { transform:translate(-1%, -1%) } 30% { transform:translate(1%, -1%) } 50% { transform:translate(-1%, 1%) } 70% { transform:translate(1%, 1%) } }
+
+        /* Camera Content Area */
+        #cam-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; filter: sepia(1) hue-rotate(80deg) brightness(1.1) contrast(1.2); }
+        
+        .cam-id { position: absolute; top: 20px; left: 20px; color: #0f0; font-size: 24px; font-weight: bold; font-family: monospace; text-shadow: 0 0 5px #0f0; animation: blink 1s infinite; }
+        .cam-status-live { position: absolute; top: 25px; left: 130px; width: 15px; height: 15px; background: red; border-radius: 50%; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+        /* Visual representation of Monster (Text based for now) */
+        #monster-visual { font-size: 40px; color: #0f0; text-shadow: 0 0 10px #0f0; font-weight: bold; text-align: center; display: none;}
+        #no-signal-visual { font-size: 20px; color: #8a8; }
+
+        /* ====== CAMERA MAP CSS ====== */
+        #map-container { position: absolute; bottom: 60px; right: 20px; width: 250px; height: 180px; background: rgba(0, 50, 0, 0.6); border: 2px solid #0f0; padding: 10px; font-family: monospace; color: #0f0; }
+        #map-title { text-align: center; margin-bottom: 10px; font-weight: bold; }
+        .map-layout { position: relative; width: 100%; height: 130px; border: 1px solid #0f0; background: rgba(0,0,0,0.3); }
+        
+        /* Map Camera Buttons */
+        .map-cam-btn { position: absolute; background: #040; border: 1px solid #0f0; color: #0f0; padding: 2px 5px; font-size: 10px; cursor: pointer; pointer-events: auto; }
+        .map-cam-btn:hover { background: #0f0; color: black; }
+        .map-cam-btn.active-cam { background: #0f0; color: black; font-weight: bold; box-shadow: 0 0 5px #0f0; }
+        
+        /* Define positions on map */
+        #cam1-btn { top: 10px; left: 10px; } /* Stage */
+        #cam2-btn { bottom: 10px; left: 10px; } /* Dining */
+        #cam3-btn { top: 10px; right: 10px; } /* Hallway */
+        #cam4-btn { bottom: 40px; right: 40px; } /* Closet */
+        #map-office { position: absolute; bottom: 5px; right: 5px; width: 30px; height: 30px; border: 1px dashed #0f0; text-align: center; line-height: 30px; font-size: 9px; }
+
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -85,18 +81,35 @@
 
     <div id="ui">
         <div id="power-display" class="hud">POWER: <span id="power-val">100</span>%</div>
+        <div id="time-display" class="hud">12 AM<br><span style="font-size:12px">Night 1</span></div>
         
-        <button id="btn-left" class="btn" onclick="toggleLeftDoor()">PINTU KIRI</button>
-        <button id="btn-right" class="btn" onclick="toggleRightDoor()">PINTU KANAN</button>
+        <button id="btn-left" class="btn" onclick="toggleLeftDoor()">PINTU</button>
+        <button id="btn-right" class="btn" onclick="toggleRightDoor()">PINTU</button>
         
-        <button id="btn-monitor" class="btn" onclick="toggleMonitor()">MONITOR KAMERA</button>
+        <button id="btn-monitor" class="btn" onclick="toggleMonitor()">▲ MONITOR ▲</button>
+    </div>
 
-        <div id="camera-screen">
-            <div class="cam-status">● LIVE - CAM 1A (Main Hall)</div>
-            <div style="display: flex; height: 100%; justify-content: center; align-items: center; font-size: 20px;">
-                [ Ruangan Gelap, Terlihat Bayangan Mencurigakan ]
+    <div id="camera-screen">
+        <div id="cam-content">
+            <div class="cam-id" id="cam-id-text">CAM 1</div>
+            <div class="cam-status-live"></div>
+            
+            <div id="monster-visual">
+                [ SESUATU BERDIRI DI SINI ]<br>
+                <span style="font-size:20px; color:red;">● ●</span>
             </div>
-            <button class="btn" style="bottom: 10px; right: 10px;" onclick="toggleMonitor()">TUTUP</button>
+            <div id="no-signal-visual">Kamera Aktif - Tidak ada pergerakan</div>
+        </div>
+
+        <div id="map-container">
+            <div id="map-title">DENAH GEDUNG</div>
+            <div class="map-layout">
+                <button id="cam1-btn" class="map-cam-btn active-cam" onclick="selectCamera(1)">CAM 1</button>
+                <button id="cam2-btn" class="map-cam-btn" onclick="selectCamera(2)">CAM 2</button>
+                <button id="cam3-btn" class="map-cam-btn" onclick="selectCamera(3)">CAM 3</button>
+                <button id="cam4-btn" class="map-cam-btn" onclick="selectCamera(4)">CAM 4</button>
+                <div id="map-office">YOU</div>
+            </div>
         </div>
     </div>
 
@@ -104,142 +117,295 @@
         // --- 1. SETUP DASAR THREE.JS ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.15); // Efek kabut biar seram
+        scene.fog = new THREE.FogExp2(0x0a0a0a, 0.1); // Kabut tipis agar gelap di kejauhan
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Posisikan kamera di tengah ruangan kantor
-        camera.position.set(0, 0, 0); 
+        camera.position.set(0, 0, 0.5); // Mundur sedikit agar meja terlihat
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        // --- 2. MEMBUAT RUANGAN (OFFICE) ---
-        // Membuat dinding kantor sederhana menggunakan Box terbalik
-        const roomGeometry = new THREE.BoxGeometry(10, 6, 10);
-        // Menggunakan MeshStandardMaterial agar merespon cahaya
+        // --- 2. MEMBUAT RUANGAN KANTOR (OFFICE) ---
+        const roomGeometry = new THREE.BoxGeometry(12, 7, 10);
         const roomMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x222222, 
-            side: THREE.BackSide // Agar bagian dalam box yang terlihat
+            color: 0x333333, // Dinding abu-abu gelap
+            side: THREE.BackSide,
+            roughness: 0.8
         });
         const office = new THREE.Mesh(roomGeometry, roomMaterial);
         scene.add(office);
 
+        // Tambah Meja Kantor sederhana agar tidak kosong
+        const deskGeo = new THREE.BoxGeometry(4, 1, 2);
+        const deskMat = new THREE.MeshStandardMaterial({ color: 0x221100 });
+        const desk = new THREE.Mesh(deskGeo, deskMat);
+        desk.position.set(0, -2.5, -3);
+        scene.add(desk);
+
         // --- 3. MEMBUAT PINTU 3D ---
-        const doorGeo = new THREE.BoxGeometry(0.2, 5, 2);
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const doorGeo = new THREE.BoxGeometry(0.3, 6, 2.5);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.5 });
 
         const leftDoor = new THREE.Mesh(doorGeo, doorMat);
-        leftDoor.position.set(-4.9, 0, 0); // Pintu kiri
+        leftDoor.position.set(-5.8, 0, 0); // Pintu kiri di dinding
         scene.add(leftDoor);
 
         const rightDoor = new THREE.Mesh(doorGeo, doorMat);
-        rightDoor.position.set(4.9, 0, 0); // Pintu kanan
+        rightDoor.position.set(5.8, 0, 0); // Pintu kanan di dinding
         scene.add(rightDoor);
 
-        // --- 4. PENCAHAYAAN (LIGHTING) ---
-        // Lampu utama di atas meja kantor (redup berkedip khas FNAF)
-        const deskLight = new THREE.PointLight(0xffffff, 0.8, 8);
-        deskLight.position.set(0, 2, -2);
+        // --- 4. PENCAHAYAAN (LIGHTING) - UPDATE: LEBIH TERANG ---
+        // Lampu Atas Utama (Hemisphere agar seluruh ruangan agak terang secara merata)
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x080820, 0.5);
+        scene.add(hemiLight);
+
+        // Lampu Meja (PointLight fokus di area depan)
+        const deskLight = new THREE.PointLight(0xfff0dd, 1.0, 10); // Warna agak hangat, intensitas 1.0
+        deskLight.position.set(0, 1.5, -2);
         scene.add(deskLight);
 
-        // Lampu ambient biar tidak gelap gulita
-        const ambientLight = new THREE.AmbientLight(0x111111);
-        scene.add(ambientLight);
+        // Lampu tipis di lorong luar pintu (biar seram kalau pintu dibuka)
+        const lightLeft = new THREE.PointLight(0x2222ff, 0.2, 5); // Kebiruan
+        lightLeft.position.set(-7, 0, 0);
+        scene.add(lightLeft);
+
+        const lightRight = new THREE.PointLight(0xff2222, 0.2, 5); // Kemerahan
+        lightRight.position.set(7, 0, 0);
+        scene.add(lightRight);
 
         // --- 5. LOGIKA GAME & STATE ---
         let power = 100;
         let leftDoorOpen = true;
         let rightDoorOpen = true;
         let monitorOpen = false;
+        let currentCam = 1;
+        let gameOver = false;
+
+        // Data Ruangan Kamera
+        const camRooms = {
+            1: "Show Stage",
+            2: "Dining Area",
+            3: "Back Hallway",
+            4: "Supply Closet"
+        };
+
+        // --- Logika Monster (AI Sederhana) ---
+        // Posisi: 1 (Stage), 2, 3, 4, 'DOOR_L', 'OFFICE'
+        let monsterLocation = 1; 
+
+        function moveMonster() {
+            if (gameOver) return;
+
+            const roll = Math.random();
+            
+            // Logika pergerakan sederhana berdasarkan lokasi saat ini
+            if (monsterLocation === 1) { // Di Stage
+                if (roll > 0.6) monsterLocation = 2; // Move to Dining
+            } 
+            else if (monsterLocation === 2) { // Dining
+                if (roll > 0.5) monsterLocation = 3; // Move to Hallway
+                else if (roll > 0.3) monsterLocation = 1; // Back to Stage
+            }
+            else if (monsterLocation === 3) { // Hallway
+                if (roll > 0.4) monsterLocation = 'DOOR_L'; // Siap menerkam di pintu kiri
+                else if (roll > 0.2) monsterLocation = 2; // Back to Dining
+            }
+            else if (monsterLocation === 'DOOR_L') {
+                // Jika pintu tertutup, dia kembali ke lorong
+                if (!leftDoorOpen) {
+                    monsterLocation = 3;
+                    console.log("Monster tertahan pintu kiri");
+                } else {
+                    // JUMPSCARE MUNCUL DI SINI NANTINYA
+                    monsterLocation = 'OFFICE';
+                    triggerJumpscare();
+                }
+            }
+
+            console.log("Freddy move to: " + monsterLocation);
+            
+            // Update tampilan jika monitor sedang terbuka
+            if (monitorOpen) {
+                updateMonitorView();
+            }
+        }
+
+        // Jalankan loop pergerakan monster setiap 8 detik
+        setInterval(moveMonster, 8000);
+
+        // --- Logika Pintu & Monitor ---
+        const btnLeftHTML = document.getElementById('btn-left');
+        const btnRightHTML = document.getElementById('btn-right');
 
         function toggleLeftDoor() {
+            if (power <= 0 || gameOver) return;
             leftDoorOpen = !leftDoorOpen;
-            document.getElementById('btn-left').style.background = leftDoorOpen ? 'rgba(30,30,30,0.8)' : 'red';
+            if (leftDoorOpen) btnLeftHTML.classList.remove('btn-active');
+            else btnLeftHTML.classList.add('btn-active');
+            // Suara pintu opsional
         }
 
         function toggleRightDoor() {
+            if (power <= 0 || gameOver) return;
             rightDoorOpen = !rightDoorOpen;
-            document.getElementById('btn-right').style.background = rightDoorOpen ? 'rgba(30,30,30,0.8)' : 'red';
+            if (rightDoorOpen) btnRightHTML.classList.remove('btn-active');
+            else btnRightHTML.classList.add('btn-active');
         }
 
         function toggleMonitor() {
+            if (power <= 0 || gameOver) return;
             monitorOpen = !monitorOpen;
-            document.getElementById('camera-screen').style.display = monitorOpen ? 'block' : 'none';
+            const screen = document.getElementById('camera-screen');
+            screen.style.display = monitorOpen ? 'block' : 'none';
+            
+            if (monitorOpen) {
+                updateMonitorView();
+            }
+        }
+
+        // --- Logika Berpindah Kamera ---
+        function selectCamera(camId) {
+            // Hilangkan class active dari tombol lama
+            document.querySelector('.map-cam-btn.active-cam').classList.remove('active-cam');
+            // Tambah ke tombol baru
+            document.getElementById(`cam${camId}-btn`).classList.add('active-cam');
+            
+            currentCam = camId;
+            updateMonitorView();
+        }
+
+        // --- UPDATE TAMPILAN MONITOR (Cek Monster) ---
+        function updateMonitorView() {
+            const camIdText = document.getElementById('cam-id-text');
+            const monsterVisual = document.getElementById('monster-visual');
+            const noSignalVisual = document.getElementById('no-signal-visual');
+
+            camIdText.innerText = `CAM ${currentCam} (${camRooms[currentCam]})`;
+
+            // Cek apakah monster ada di kamera yang sedang dilihat
+            if (monsterLocation === currentCam) {
+                // Monster terlihat!
+                monsterVisual.style.display = 'block';
+                noSignalVisual.style.display = 'none';
+                
+                // Efek static menguat saat ada monster
+                document.getElementById('camera-screen').style.opacity = 0.9;
+            } else {
+                // Ruangan kosong
+                monsterVisual.style.display = 'none';
+                noSignalVisual.style.display = 'block';
+                document.getElementById('camera-screen').style.opacity = 1;
+            }
+        }
+
+        function triggerJumpscare() {
+            gameOver = true;
+            monitorOpen = false;
+            document.getElementById('camera-screen').style.display = 'none';
+            document.getElementById('ui').style.display = 'none';
+            
+            // Layar Merah / Gambar Jumpscare
+            renderer.setClearColor(0xff0000);
+            scene.children = []; // Hapus isi scene
+            
+            alert("GAME OVER - Freddy Got You!");
+            location.reload(); // Reload game
         }
 
         // --- 6. MEKANISME MENENGOK (MOUSE LOOK) ---
         let targetRotationY = 0;
-        let targetRotationX = 0;
-
         window.addEventListener('mousemove', (event) => {
-            // Menghitung posisi mouse relatif terhadap tengah layar (-1 sampai 1)
+            if (monitorOpen || gameOver) return;
             const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            // Batasi sudut tengok (FNAF tidak bisa berputar 360 derajat)
-            targetRotationY = -mouseX * (Math.PI / 3); // Batas kiri-kanan sekitar 60 derajat
-            targetRotationX = mouseY * (Math.PI / 8);  // Batas atas-bawah sedikit saja
+            targetRotationY = -mouseX * (Math.PI / 4); // Batas tengok kiri kanan
         });
 
         // --- 7. GAME LOOP (ANIMATION & UPDATE) ---
         const clock = new THREE.Clock();
         let powerTimer = 0;
+        let gameTime = 0; // 0 = 12AM, 1 = 1AM, dst.
 
         function animate() {
             requestAnimationFrame(animate);
 
             const delta = clock.getDelta();
 
-            // Efek kamera smooth lerp saat menengok
-            camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.1;
-            camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.1;
-
-            // Animasi Pintu Terbuka / Tertutup (Bergerak ke atas/bawah)
-            const targetLeftY = leftDoorOpen ? 5 : 0; 
-            leftDoor.position.y += (targetLeftY - leftDoor.position.y) * 0.2;
-
-            const targetRightY = rightDoorOpen ? 5 : 0;
-            rightDoor.position.y += (targetRightY - rightDoor.position.y) * 0.2;
-
-            // Efek lampu berkedip acak (Horror vibe)
-            if (Math.random() > 0.98) {
-                deskLight.intensity = Math.random() * 0.8;
+            // Gerakan kamera smooth
+            if (!monitorOpen && !gameOver) {
+                camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.1;
             }
 
-            // Sistem Pengurangan Power (Baterai)
-            powerTimer += delta;
-            if (powerTimer >= 2 && power > 0) { // Setiap 2 detik berkurang
-                let usage = 1; // Beban dasar
-                if (!leftDoorOpen) usage += 1;
-                if (!rightDoorOpen) usage += 1;
-                if (monitorOpen) usage += 1;
+            // Animasi Pintu
+            const targetLeftY = leftDoorOpen ? 6 : 0; 
+            leftDoor.position.y += (targetLeftY - leftDoor.position.y) * 0.3;
 
-                power -= usage;
-                if (power < 0) power = 0;
-                document.getElementById('power-val').innerText = power;
-                powerTimer = 0;
+            const targetRightY = rightDoorOpen ? 6 : 0;
+            rightDoor.position.y += (targetRightY - rightDoor.position.y) * 0.3;
 
-                // Jika baterai habis, matikan lampu
-                if (power === 0) {
-                    deskLight.intensity = 0;
-                    ambientLight.color.setHex(0x000000);
-                    leftDoorOpen = true; // Pintu terbuka otomatis kalau mati lampu
-                    rightDoorOpen = true;
+            // Sistem Power & Waktu
+            if (!gameOver) {
+                powerTimer += delta;
+                if (powerTimer >= 1) { // Hitung per detik
+                    // 1. Logika Pengurangan Power
+                    let usage = 0.1; // Beban dasar (lampu kantor)
+                    if (!leftDoorOpen) usage += 0.3;
+                    if (!rightDoorOpen) usage += 0.3;
+                    if (monitorOpen) usage += 0.4;
+
+                    power -= usage;
+                    if (power <= 0) {
+                        power = 0;
+                        handlePowerOut();
+                    }
+                    document.getElementById('power-val').innerText = Math.floor(power);
+
+                    // 2. Logika Waktu Game (Cepat saja untuk demo)
+                    gameTime += 0.005; // Kecepatan waktu
+                    if (gameTime > 6) gameTime = 6; // Mentok di 6 AM
+                    
+                    const hours = Math.floor(gameTime);
+                    const displayHours = hours === 0 ? 12 : hours;
+                    document.getElementById('time-display').innerHTML = `${displayHours} AM<br><span style="font-size:12px">Night 1</span>`;
+
+                    if (hours === 6) {
+                        gameOver = true;
+                        alert("6 AM - YOU WIN!");
+                        location.reload();
+                    }
+
+                    powerTimer = 0;
                 }
             }
 
             renderer.render(scene, camera);
         }
 
-        // Menangani perubahan ukuran window browser
+        function handlePowerOut() {
+            deskLight.intensity = 0;
+            hemiLight.intensity = 0;
+            scene.fog.color.setHex(0x000000);
+            
+            // Paksa buka pintu
+            leftDoorOpen = true;
+            rightDoorOpen = true;
+            monitorOpen = false;
+            document.getElementById('camera-screen').style.display = 'none';
+            document.getElementById('ui').style.display = 'none';
+
+            gameOver = true;
+            // Tunggu beberapa detik lalu jumpscare
+            setTimeout(() => {
+                 triggerJumpscare();
+            }, 5000);
+        }
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Jalankan game
         animate();
     </script>
 </body>
