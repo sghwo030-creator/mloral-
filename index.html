@@ -3,373 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FNAF Three.js - Real 3D Hallways & Visual Cam</title>
+    <title>THE LOSS SOLL - Horror Game Prototype</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background-color: #000; user-select: none; color: white; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
-        
-        /* UI HUD */
-        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .hud { position: absolute; color: #fff; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; padding: 15px; background: rgba(0,0,0,0.4); }
-        #power-display { top: 0; left: 0; border-bottom-right-radius: 10px; color: #00ff00; }
-        #time-display { top: 0; right: 0; border-bottom-left-radius: 10px; text-align: right; }
-        #esc-hint { bottom: 60px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #aaa; display: none; }
-        
-        /* Buttons */
-        .btn { position: absolute; pointer-events: auto; background: rgba(40, 40, 40, 0.9); color: white; border: 2px solid #666; padding: 12px 24px; cursor: pointer; font-weight: bold; font-family: monospace; }
-        .btn:hover { background: #555; }
-        #btn-left { bottom: 50%; left: 20px; border-left: 5px solid #ff0000; }
-        #btn-right { bottom: 50%; right: 20px; border-right: 5px solid #ff0000; }
-        .btn-closed { background: #990000 !important; color: #fff; }
-        
-        #btn-monitor { bottom: 10px; left: 50%; transform: translateX(-50%); width: 30%; height: 40px; background: rgba(0, 0, 100, 0.4); border: 2px solid #00f; text-align: center; font-size: 16px; }
-
-        /* ====== CAMERA MONITOR (VISUAL REAL) ====== */
-        #camera-screen { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; pointer-events: auto; z-index: 20; box-sizing: border-box;
-        }
-        /* Efek Garis Khas CCTV */
-        #camera-screen::after {
-            content: " "; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.04), rgba(0, 255, 0, 0.04) 2px, transparent 2px, transparent 4px);
-            pointer-events: none;
-        }
-        
-        /* Wadah Gambar CCTV */
-        #cam-render-area { width: 100%; height: 100%; position: relative; background-size: cover; background-position: center; filter: brightness(0.7) contrast(1.3) grayscale(0.5); }
-        
-        .cam-overlay { position: absolute; top: 20px; left: 20px; color: #0f0; font-size: 24px; font-weight: bold; text-shadow: 0 0 5px #000; }
-        .blink-dot { inline-block; width: 15px; height: 15px; background: red; border-radius: 50%; display: inline-block; margin-right: 10px; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-
-        /* DENAH MAP CCTV */
-        #map-container { position: absolute; bottom: 40px; right: 40px; width: 220px; height: 200px; background: rgba(0, 20, 0, 0.85); border: 2px solid #0f0; padding: 10px; color: #0f0; }
-        .map-layout { position: relative; width: 100%; height: 150px; border: 2px solid #0f0; margin-top: 10px; }
-        .map-cam-btn { position: absolute; background: #020; border: 1px solid #0f0; color: #0f0; padding: 4px 6px; font-size: 11px; cursor: pointer; }
-        .map-cam-btn:hover, .active-cam { background: #0f0; color: #000; font-weight: bold; }
-        
-        /* Posisi Tombol di Denah */
-        #cam1-btn { top: 10px; left: 75px; }   /* Stage */
-        #cam2-btn { top: 60px; left: 75px; }   /* Dining Hall */
-        #cam3-btn { bottom: 50px; left: 15px; } /* Left Hallway */
-        #cam4-btn { bottom: 50px; right: 15px; }/* Right Hallway */
-        #map-office { position: absolute; bottom: 5px; left: 80px; width: 50px; height: 30px; border: 2px dashed #0f0; text-align: center; line-height: 30px; font-size: 11px; font-weight: bold; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #ff0000; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; }
+        #monster-status { position: absolute; top: 50px; left: 20px; color: #fff; font-size: 16px; text-shadow: 1px 1px #000; }
+        #instructions { position: absolute; bottom: 30px; width: 100%; text-align: center; color: #fff; font-size: 18px; text-shadow: 1px 1px #000; }
+        #screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); color: white; font-size: 40px; display: none; flex-direction: column; }
+        #restart-btn { margin-top: 20px; padding: 10px 20px; font-size: 20px; cursor: pointer; background: #ff0000; color: white; border: none; }
     </style>
+    <!-- Meload Three.js dari CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
+    <div id="hud">Jarak ke Pintu: <span id="distance">100</span>m</div>
+    <div id="monster-status">THE LOSS SOLL: <span id="m-state">Mengintai...</span></div>
+    <div id="instructions">TAHAN TOMBOL [ W ] UNTUK LARI MENUJU PINTU!</div>
+    
+    <div id="screen-overlay" id="overlay">
+        <div id="overlay-text">GAME OVER</div>
+        <button id="restart-btn" onclick="resetGame()">Coba Lagi</button>
+    </div>
+
     <div id="canvas-container"></div>
 
-    <div id="ui">
-        <div id="power-display" class="hud">BATERAI: <span id="power-val">100</span>%</div>
-        <div id="time-display" class="hud">12 AM<br><span style="font-size:12px">Malam 1</span></div>
-        <div id="esc-hint" class="hud">Tekan [ESC] untuk Keluar Monitor</div>
-        
-        <button id="btn-left" class="btn" onclick="toggleLeftDoor()">PINTU KIRI</button>
-        <button id="btn-right" class="btn" onclick="toggleRightDoor()">PINTU KANAN</button>
-        <button id="btn-monitor" class="btn" onclick="toggleMonitor()">▲ LIHAT MONITOR ▲</button>
-    </div>
-
-    <div id="camera-screen">
-        <div id="cam-render-area">
-            <div class="cam-overlay"><span class="blink-dot"></span><span id="cam-name-text">CAM 1 - SHOW STAGE</span></div>
-            
-            <div id="map-container">
-                <div style="text-align:center; font-weight:bold; font-size:12px;">DENAH AREA</div>
-                <div class="map-layout">
-                    <button id="cam1-btn" class="map-cam-btn active-cam" onclick="selectCamera(1)">CAM 1</button>
-                    <button id="cam2-btn" class="map-cam-btn" onclick="selectCamera(2)">CAM 2</button>
-                    <button id="cam3-btn" class="map-cam-btn" onclick="selectCamera(3)">CAM 3</button>
-                    <button id="cam4-btn" class="map-cam-btn" onclick="selectCamera(4)">CAM 4</button>
-                    <div id="map-office">OFFICE</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // --- 1. SETUP THREE.JS (MAP REAL BERLORONG) ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020202, 0.12); // Lorong makin jauh makin gelap gulita
-
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 1); // Posisi duduk di kantor
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
-
-        // --- 2. MODULASI GEOMETRI RUANGAN (Bukan Kotak Tertutup Lagi) ---
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x252525, roughness: 0.9 });
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.7 });
-
-        // Kantor Tengah (Tempat Pemain)
-        const officeFloor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), floorMat);
-        officeFloor.rotation.x = -Math.PI / 2;
-        officeFloor.position.y = -2.5;
-        scene.add(officeFloor);
-
-        const officeBackWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), wallMat);
-        officeBackWall.position.set(0, 0, 3); // Dinding belakang pemain
-        scene.add(officeBackWall);
-
-        const officeFrontWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), wallMat);
-        officeFrontWall.position.set(0, 0, -3); // Dinding depan (meja)
-        scene.add(officeFrontWall);
-
-        // MEJA KANTOR
-        const desk = new THREE.Mesh(new THREE.BoxGeometry(4, 0.8, 1.5), new THREE.MeshStandardMaterial({color: 0x3a1d00}));
-        desk.position.set(0, -2.1, -2);
-        scene.add(desk);
-
-        // LORONG KIRI (Tembus keluar dari sisi kiri kantor)
-        const leftHallway = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 3), wallMat);
-        leftHallway.position.set(-8, 0, 0); // Memanjang ke kiri sepanjang 10 unit
-        scene.add(leftHallway);
-
-        // LORONG KANAN (Tembus keluar dari sisi kanan kantor)
-        const rightHallway = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 3), wallMat);
-        rightHallway.position.set(8, 0, 0); // Memanjang ke kanan sepanjang 10 unit
-        scene.add(rightHallway);
-
-        // --- 3. PINTU 3D ---
-        const doorGeo = new THREE.BoxGeometry(0.2, 5, 3);
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.6 });
-        
-        const leftDoor = new THREE.Mesh(doorGeo, doorMat);
-        leftDoor.position.set(-2.9, 0, 0); // Tepat di batas Kantor dan Lorong Kiri
-        scene.add(leftDoor);
-
-        const rightDoor = new THREE.Mesh(doorGeo, doorMat);
-        rightDoor.position.set(2.9, 0, 0); // Tepat di batas Kantor dan Lorong Kanan
-        scene.add(rightDoor);
-
-        // --- 4. MONSTER 3D (FISIK REAL) ---
-        // Kita bikin monster berwujud siluet hitam tinggi mata menyala merah di lorong 3D!
-        const monsterGroup = new THREE.Group();
-        
-        const bodyGeo = new THREE.CylinderGeometry(0.4, 0.6, 3.5, 8);
-        const bodyMat = new THREE.MeshBasicMaterial({ color: 0x050505 }); // Sangat hitam gelap
-        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        monsterGroup.add(bodyMesh);
-
-        // Mata Merah Menyala
-        const eyeGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        
-        const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(0.3, 1.5, 0.4);
-        const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.3, 1.5, -0.4);
-        monsterGroup.add(leftEye, rightEye);
-
-        // Sembunyikan dulu jauh di luar peta saat awal game
-        monsterGroup.position.set(-20, -0.8, 0); 
-        scene.add(monsterGroup);
-
-        // --- 5. LIGHTING / PENCAHAYAAN KANTOR ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.25); // Cahaya dasar sekeliling kantor
-        scene.add(ambientLight);
-
-        const officeCeilingLight = new THREE.PointLight(0xffeedd, 0.9, 8); // Lampu plafon
-        officeCeilingLight.position.set(0, 2, 0);
-        scene.add(officeCeilingLight);
-
-        // --- 6. DATABASE GAMBAR CCTV (VISUAL REAL MONSTER) ---
-        // Menggunakan aset gambar real bertema ruangan gelap & siluet monster fnaf-like
-        const cctvImages = {
-            1: { // Stage
-                empty: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?q=80&w=600&auto=format&fit=crop", // Panggung kosong gelap
-                monster: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=600&auto=format&fit=crop" // Ada bayangan monster berdiri
-            },
-            2: { // Dining Hall
-                empty: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=600&auto=format&fit=crop", // Lorong restoran kosong
-                monster: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=600&auto=format&fit=crop" // Siluet menakutkan
-            },
-            3: { // Lorong Kiri
-                empty: "https://images.unsplash.com/photo-1509803874385-db7c23652552?q=80&w=600&auto=format&fit=crop", // Lorong berasap kosong
-                monster: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop" // Monster mendekat
-            },
-            4: { // Lorong Kanan
-                empty: "https://images.unsplash.com/photo-1536566482680-fca31930a0bd?q=80&w=600&auto=format&fit=crop",
-                monster: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=600&auto=format&fit=crop"
-            }
-        };
-
-        const camNames = { 1: "CAM 1 - SHOW STAGE", 2: "CAM 2 - DINING AREA", 3: "CAM 3 - LEFT HALLWAY", 4: "CAM 4 - RIGHT HALLWAY" };
-
-        // --- 7. LOGIKA GAMEPLAY & AI ---
-        let power = 100;
-        let leftDoorOpen = true;
-        let rightDoorOpen = true;
-        let monitorOpen = false;
-        let currentCam = 1;
-        let monsterLocation = 1; // 1: Stage, 2: Dining, 3: Lorong Kiri, 'DOOR_L': Tepat depan pintu, 'OFFICE': Jumpscare
+        let scene, camera, renderer, player, monster, door;
+        let walls = [], lights = [];
+        let moveForward = false;
         let gameOver = false;
+        
+        // Game Settings
+        const finishLine = -120; // Posisi pintu di koordinat Z
+        let playerSpeed = 0.3;
+        let monsterSpeed = 0.1;
+        let monsterTimer = 0;
+        let monsterIsSprinting = false;
 
-        function moveMonsterAI() {
-            if (gameOver) return;
-            const roll = Math.random();
+        function init() {
+            // 1. Setup Scene & Camera
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.15); // Kabut biar serem
 
-            if (monsterLocation === 1) {
-                if (roll > 0.5) monsterLocation = 2; // Dari stage ke Dining Hall
-            } else if (monsterLocation === 2) {
-                if (roll > 0.4) monsterLocation = 3; // Dari Dining ke Lorong Kiri
-                else if (roll > 0.1) monsterLocation = 1; // Mundur ke stage
-            } else if (monsterLocation === 3) {
-                if (roll > 0.5) {
-                    monsterLocation = 'DOOR_L';
-                    // PINDAHKAN MONSTER 3D NYATA KE DEPAN PINTU KIRI PEMAIN!
-                    monsterGroup.position.set(-3.8, -0.8, 0); 
-                    monsterGroup.rotation.y = Math.PI / 2; // Menghadap ke pemain
-                } else if (roll > 0.2) {
-                    monsterLocation = 2; // Mundur ke dining
-                    monsterGroup.position.set(-20, -0.8, 0); // Sembunyikan mesh 3D lagi
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5); // Posisi mata player
+
+            // 2. Setup Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // 3. Bikin Lorong RS Jiwa (Gunakan Box raksasa yang dibalik)
+            const corridorGeo = new THREE.BoxGeometry(6, 5, 150);
+            // Material dinding suram pasien gangguan jiwa
+            const corridorMat = new THREE.MeshStandardMaterial({ 
+                color: 0x2d3e35, // Hijau lumut / rumah sakit tua
+                side: THREE.BackSide,
+                roughness: 0.8
+            });
+            const corridor = new THREE.Mesh(corridorGeo, corridorMat);
+            corridor.position.set(0, 2.5, -70);
+            scene.add(corridor);
+
+            // 4. Bikin Pintu Darurat di Ujung Lorong
+            const doorGeo = new THREE.BoxGeometry(2, 4, 0.2);
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x5a1818, roughness: 0.5 }); // Pintu merah tua
+            door = new THREE.Mesh(doorGeo, doorMat);
+            door.position.set(0, 2, finishLine);
+            scene.add(door);
+
+            // 5. Bikin Monster (THE LOSS SOLL)
+            // Sementara pake bentuk bayangan merah tinggi abstrak penjelmaan jiwa
+            const monsterGeo = new THREE.CylinderGeometry(0.6, 0.3, 3.5, 8);
+            const monsterMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }); 
+            monster = new THREE.Mesh(monsterGeo, monsterMat);
+            monster.position.set(0, 1.75, 15); // Mulai dari belakang player
+            scene.add(monster);
+
+            // 6. Pencahayaan
+            // Senter Player (Flashlight)
+            const flashlight = new THREE.SpotLight(0xffffff, 2, 25, Math.PI / 6, 0.5, 1);
+            camera.add(flashlight);
+            flashlight.position.set(0, 0, 0);
+            flashlight.target = new THREE.Object3D();
+            camera.add(flashlight.target);
+            flashlight.target.position.set(0, 0, -1);
+            scene.add(camera);
+
+            // Lampu lorong kedap-kedip (Flickering)
+            const hallLight = new THREE.PointLight(0xaaaaaa, 0.8, 30);
+            hallLight.position.set(0, 4.5, -30);
+            scene.add(hallLight);
+            lights.push(hallLight);
+
+            const hallLight2 = new THREE.PointLight(0xaaaaaa, 0.8, 30);
+            hallLight2.position.set(0, 4.5, -80);
+            scene.add(hallLight2);
+            lights.push(hallLight2);
+
+            // Event Listeners Kontrol
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'w') moveForward = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.key.toLowerCase() === 'w') moveForward = false;
+            });
+            window.addEventListener('resize', onWindowResize);
+
+            animate();
+        }
+
+        // AI Monster Asma (THE LOSS SOLL)
+        function updateMonsterLogic() {
+            monsterTimer += 0.016; // Asumsi ~60fps
+
+            if (monsterIsSprinting) {
+                // Mode Lari Super Kencang (Jiwa bugar)
+                monsterSpeed = 0.42; 
+                document.getElementById('m-state').innerText = "DIA BERLARI KENCANG!!";
+                document.getElementById('m-state').style.color = "red";
+                
+                if (monsterTimer > 2.5) { // Cuma kuat lari 2.5 detik karena asma
+                    monsterIsSprinting = false;
+                    monsterTimer = 0;
                 }
-            } else if (monsterLocation === 'DOOR_L') {
-                if (!leftDoorOpen) {
-                    // Pintu tertutup! Monster gagal masuk dan mundur ke Dining area
-                    monsterLocation = 2;
-                    monsterGroup.position.set(-20, -0.8, 0);
-                    console.log("Monster diblokir pintu! Mundur ke Dining Hall.");
-                } else {
-                    // Pintu terbuka? Jumpscare!
-                    monsterLocation = 'OFFICE';
-                    triggerJumpscare();
+            } else {
+                // Mode Asma Kambuh (Napas tersengal-sengal, lari pelan banget)
+                monsterSpeed = 0.08;
+                document.getElementById('m-state').innerText = "*Suara Mengos-mengosan* (Asma)";
+                document.getElementById('m-state').style.color = "#ffaa00";
+
+                if (monsterTimer > 4.0) { // Istirahat/asma kambuh selama 4 detik
+                    monsterIsSprinting = true;
+                    monsterTimer = 0;
                 }
             }
 
-            console.log("Lokasi Monster Saat Ini: " + monsterLocation);
-            if (monitorOpen) updateMonitorView();
+            // Monster selalu bergerak maju mengejar koordinat Z player
+            monster.position.z -= monsterSpeed;
         }
-        setInterval(moveMonsterAI, 6000); // Sistem AI berhitung setiap 6 detik
-
-        // CONTROLS & ESCAPE INPUT KEY
-        window.addEventListener('keydown', (e) => {
-            // FIX: JIKA PENCET ESCAPE, MONITOR LANGSUNG KELUAR!
-            if (e.key === "Escape" || e.key === "Esc") {
-                if (monitorOpen) {
-                    toggleMonitor();
-                }
-            }
-        });
-
-        function toggleLeftDoor() {
-            if (power <= 0 || gameOver) return;
-            leftDoorOpen = !leftDoorOpen;
-            document.getElementById('btn-left').className = leftDoorOpen ? "btn" : "btn btn-closed";
-        }
-
-        function toggleRightDoor() {
-            if (power <= 0 || gameOver) return;
-            rightDoorOpen = !rightDoorOpen;
-            document.getElementById('btn-right').className = rightDoorOpen ? "btn" : "btn btn-closed";
-        }
-
-        function toggleMonitor() {
-            if (power <= 0 || gameOver) return;
-            monitorOpen = !monitorOpen;
-            
-            document.getElementById('camera-screen').style.display = monitorOpen ? 'block' : 'none';
-            document.getElementById('esc-hint').style.display = monitorOpen ? 'block' : 'none';
-            
-            if (monitorOpen) updateMonitorView();
-        }
-
-        function selectCamera(camId) {
-            document.querySelector('.map-cam-btn.active-cam').classList.remove('active-cam');
-            document.getElementById(`cam${camId}-btn`).classList.add('active-cam');
-            currentCam = camId;
-            updateMonitorView();
-        }
-
-        // FIX: RENDER GAMBAL REAL BERDASARKAN ADA/TIDAKNYA MONSTER
-        function updateMonitorView() {
-            document.getElementById('cam-name-text').innerText = camNames[currentCam];
-            const renderArea = document.getElementById('cam-render-area');
-            
-            let status = (monsterLocation === currentCam) ? 'monster' : 'empty';
-            let imgUrl = cctvImages[currentCam][status];
-            
-            // Ganti Background Monitor dengan gambar asli
-            renderArea.style.backgroundImage = `url('${imgUrl}')`;
-        }
-
-        function triggerJumpscare() {
-            gameOver = true;
-            monitorOpen = false;
-            document.getElementById('camera-screen').style.display = 'none';
-            document.getElementById('ui').style.display = 'none';
-            
-            // Kamera dipaksa melihat ke arah monster di kiri secara instan
-            camera.rotation.y = Math.PI / 2;
-            officeCeilingLight.color.setHex(0xff0000); // Lampu jadi merah darah
-            officeCeilingLight.intensity = 5;
-            
-            setTimeout(() => {
-                alert("JUMPSCARE! Monster berhasil menyelinap masuk lewat pintu kiri karena lu kagak tutup!");
-                location.reload();
-            }, 500);
-        }
-
-        // --- 8. MOUSE LOOK (MENENGOK SMOOTH) ---
-        let targetRotationY = 0;
-        window.addEventListener('mousemove', (event) => {
-            if (monitorOpen || gameOver) return;
-            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            targetRotationY = -mouseX * (Math.PI / 2.5); // Bisa menengok sampai lorong kiri/kanan terlihat
-        });
-
-        // --- 9. GAME LOOP ---
-        const clock = new THREE.Clock();
-        let pTimer = 0;
-        let gameTime = 0;
 
         function animate() {
+            if (gameOver) return;
+
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
 
-            if (!monitorOpen && !gameOver) {
-                camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.15;
-            }
-
-            // Animasi Gerakan Pintu Naik-Turun Fisik
-            const targetLeftY = leftDoorOpen ? 5 : 0;
-            leftDoor.position.y += (targetLeftY - leftDoor.position.y) * 0.25;
-
-            const targetRightY = rightDoorOpen ? 5 : 0;
-            rightDoor.position.y += (targetRightY - rightDoor.position.y) * 0.25;
-
-            // Pengurangan Baterai & Waktu
-            if (!gameOver) {
-                pTimer += delta;
-                if (pTimer >= 1) {
-                    let usage = 0.15;
-                    if (!leftDoorOpen) usage += 0.4;
-                    if (!rightDoorOpen) usage += 0.4;
-                    if (monitorOpen) usage += 0.5;
-
-                    power -= usage;
-                    if (power <= 0) { power = 0; gameOver = true; officeCeilingLight.intensity = 0; alert("Mati Lampu... Selesai Lu!"); location.reload(); }
-                    document.getElementById('power-val').innerText = Math.floor(power);
-
-                    gameTime += 0.01; 
-                    if (gameTime >= 6) { gameOver = true; alert("6 AM - KAMU MENANG!"); location.reload(); }
-                    document.getElementById('time-display').innerHTML = `${Math.floor(gameTime) == 0 ? 12 : Math.floor(gameTime)} AM<br><span style='font-size:12px'>Malam 1</span>`;
-                    pTimer = 0;
+            // Lampu kedap-kedip random biar spooky
+            lights.forEach(l => {
+                if (Math.random() > 0.96) {
+                    l.intensity = Math.random() * 1.5;
                 }
+            });
+
+            // Pergerakan Player
+            if (moveForward) {
+                camera.position.z -= playerSpeed;
+                // Efek kamera goyang pas lari (head bobbing)
+                camera.position.y = 2 + Math.sin(camera.position.z * 1.5) * 0.05;
             }
+
+            // Update AI Monster
+            updateMonsterLogic();
+
+            // Hitung sisa jarak ke pintu
+            let distanceToDoor = Math.round(camera.position.z - finishLine);
+            if (distanceToDoor < 0) distanceToDoor = 0;
+            document.getElementById('distance').innerText = distanceToDoor;
+
+            // Efek kamera gemetar kalau monster udah deket banget (Screen Shake)
+            let distanceToMonster = monster.position.z - camera.position.z;
+            if (distanceToMonster < 8 && distanceToMonster > 0) {
+                camera.position.x = (Math.random() - 0.5) * 0.05;
+            } else {
+                camera.position.x = 0;
+            }
+
+            // CEK KONDISI MENANG ATAU KALAH
+            // 1. Kalah: Jarak monster melampaui atau menyentuh player
+            if (monster.position.z <= camera.position.z) {
+                endGame(false);
+            }
+            // 2. Menang: Player nyampe pintu darurat
+            if (camera.position.z <= finishLine) {
+                endGame(true);
+            }
+
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
+        function endGame(isWin) {
+            gameOver = true;
+            const overlay = document.getElementById('screen-overlay');
+            const txt = document.getElementById('overlay-text');
+            overlay.style.display = 'flex';
+            
+            if (isWin) {
+                txt.innerText = "KAMU BERHASIL LOLOS!";
+                txt.style.color = "#00ff00";
+            } else {
+                txt.innerText = "THE LOSS SOLL MEMAKAN JIWAMU!";
+                txt.style.color = "#ff0000";
+            }
+        }
+
+        function resetGame() {
+            gameOver = false;
+            camera.position.set(0, 2, 5);
+            monster.position.set(0, 1.75, 15);
+            monsterTimer = 0;
+            monsterIsSprinting = false;
+            document.getElementById('screen-overlay').style.display = 'none';
+            animate();
+        }
+
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        }
 
-        animate();
+        // Jalankan game pertama kali
+        init();
     </script>
 </body>
 </html>
