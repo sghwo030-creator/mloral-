@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE LOSS SOLL - Mental Asylum</title>
+    <title>THE LOSS SOLL - 'Ain Eye Swarm Prototype</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
@@ -23,7 +23,7 @@
     <div id="monster-status">Status: <span id="m-state">Suasana sunyi... berjalanlah ke depan.</span></div>
     
     <div id="instructions">
-        KLIK LAYAR UNTUK MENGAKTIFKAN KAMERA HOROR<br>
+        KLIK LAYAR UNTUK MENGUNCI CURSOR MOUSE<br>
         Gunakan [W, A, S, D] untuk bergerak | Tahan [SHIFT] untuk Sprint lari kencang
     </div>
     
@@ -39,11 +39,10 @@
         let lights = [];
         let gameOver = false;
         let monsterSpawned = false;
+        let monsterEyes = []; // Array penampung mata pelacak
         
-        // Kontrol Pergerakan
         let keys = { w: false, a: false, s: false, d: false, shift: false };
         
-        // Setelan Game (Total Lorong 1000 Meter)
         const totalDistance = 1000;
         const finishLine = -totalDistance; 
         let normalSpeed = 0.08;
@@ -51,16 +50,15 @@
         
         let monsterSpeed = 0;
         let monsterTimer = 0;
-        let monsterState = "idle"; // idle, asthma, crying
+        let monsterState = "idle"; 
 
         function init() {
             scene = new THREE.Scene();
-            // Kabut super tebal biar lorong kelihatan gak berujung
             scene.fog = new THREE.FogExp2(0x020202, 0.08); 
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 0); // Start di koordinat Z = 0
-            camera.rotation.order = 'YXZ'; // Penting buat rotasi FPS style
+            camera.position.set(0, 2, 0); 
+            camera.rotation.order = 'YXZ'; 
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -69,12 +67,11 @@
             // Bikin Lorong RS Jiwa Sepanjang 1000 Meter
             const corridorGeo = new THREE.BoxGeometry(6, 5, totalDistance + 50);
             const corridorMat = new THREE.MeshStandardMaterial({ 
-                color: 0x1f2e26, // Hijau lumut gelap khas RS terbengkalai
+                color: 0x16221b, 
                 side: THREE.BackSide,
                 roughness: 0.9
             });
             const corridor = new THREE.Mesh(corridorGeo, corridorMat);
-            // Posisikan lorong membentang ke arah Z negatif
             corridor.position.set(0, 2.5, -totalDistance / 2);
             scene.add(corridor);
 
@@ -85,12 +82,63 @@
             door.position.set(0, 2, finishLine);
             scene.add(door);
 
-            // Pembuatan Monster (Awalnya disembunyikan jauh di belakang)
-            const monsterGeo = new THREE.CylinderGeometry(0.7, 0.2, 4, 6);
-            const monsterMat = new THREE.MeshBasicMaterial({ color: 0x990000, wireframe: true });
-            monster = new THREE.Mesh(monsterGeo, monsterMat);
-            monster.position.set(0, -10, 0); // Di bawah map dulu sebelum dicall
+            // ==========================================================
+            // PROSES SPAWN MONSTER: CUSTOM ABSTRACT DRUM + EYE SWARM
+            // ==========================================================
+            monster = new THREE.Group();
+
+            // 1. Badan Utama (Silinder Gendang Panjang dari Kulit Darah)
+            const bodyGeo = new THREE.CylinderGeometry(0.7, 1.1, 5, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: 0x4a0505, // Merah daging/darah busuk pekat
+                roughness: 0.8, 
+                metalness: 0.2,
+                emissive: 0x1a0000 
+            });
+            const mainBody = new THREE.Mesh(bodyGeo, bodyMat);
+            monster.add(mainBody);
+
+            // 2. Aksen Lipatan Kulit melingkar menyerupai Gendang
+            for(let i = 0; i < 4; i++) {
+                const ringGeo = new THREE.TorusGeometry(0.9, 0.13, 8, 16);
+                const ring = new THREE.Mesh(ringGeo, bodyMat);
+                ring.position.y = -1.8 + (i * 1.2);
+                ring.rotation.x = Math.PI / 2;
+                monster.add(ring);
+            }
+
+            // 3. Pasang Kluster 30 Bola Mata Terinspirasi dari Poster 'Ain
+            const eyeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const pupilGeo = new THREE.SphereGeometry(0.08, 8, 8);
+            const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const scleraMat = new THREE.MeshStandardMaterial({ color: 0xf5eeee, roughness: 0.3 });
+
+            for (let i = 0; i < 30; i++) {
+                const eyeGroup = new THREE.Group();
+                
+                // Bagian putih mata
+                const sclera = new THREE.Mesh(eyeGeo, scleraMat);
+                eyeGroup.add(sclera);
+                
+                // Pupil hitam pekat
+                const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+                pupil.position.z = 0.16; 
+                eyeGroup.add(pupil);
+                
+                // Tempel secara acak melingkari badan silinder monster
+                let angle = Math.random() * Math.PI * 2;
+                let height = (Math.random() - 0.5) * 4.2;
+                let radius = 0.85; // Menempel di permukaan silinder daging
+                
+                eyeGroup.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+                
+                monster.add(eyeGroup);
+                monsterEyes.push(eyeGroup); // Disimpan ke array global untuk tracking kamera
+            }
+
+            monster.position.set(0, -10, 0); // Sembunyi di bawah map sebelum dipanggil
             scene.add(monster);
+            // ==========================================================
 
             // Flashlight / Senter Player
             const flashlight = new THREE.SpotLight(0xffffff, 2.5, 35, Math.PI / 5, 0.6, 1);
@@ -101,7 +149,7 @@
             flashlight.target.position.set(0, 0, -1);
             scene.add(camera);
 
-            // Lampu-lampu gantung di sepanjang lorong (tiap 100 meter)
+            // Lampu gantung lorong (Tiap 100m)
             for(let z = -100; z >= -900; z -= 100) {
                 let light = new THREE.PointLight(0x667766, 0.5, 20);
                 light.position.set(0, 4.5, z);
@@ -109,22 +157,19 @@
                 lights.push(light);
             }
 
-            // MOUSE LOOK (Sistem Intip Kanan-Kiri-Atas-Bawah)
+            // Mouse Look Lock
             window.addEventListener('click', () => {
                 document.body.requestPointerLock();
             });
 
             document.addEventListener('mousemove', (e) => {
                 if (document.pointerLockElement === document.body) {
-                    camera.rotation.y -= e.movementX * 0.0025; // Kanan kiri
-                    camera.rotation.x -= e.movementY * 0.0025; // Atas bawah
-                    
-                    // Batasi pandangan atas bawah biar gak kayang (max 90 derajat)
+                    camera.rotation.y -= e.movementX * 0.0025; 
+                    camera.rotation.x -= e.movementY * 0.0025; 
                     camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
                 }
             });
 
-            // Input Keyboard
             window.addEventListener('keydown', (e) => handleKey(e, true));
             window.addEventListener('keyup', (e) => handleKey(e, false));
             window.addEventListener('resize', onWindowResize);
@@ -141,14 +186,13 @@
             if (e.key === 'Shift') keys.shift = isDown;
         }
 
-        // Logika Perubahan Sifat Jiwa THE LOSS SOLL
         function updateMonsterAI() {
             let playerZ = camera.position.z;
 
-            // Trigger Muncul pas player udah jalan melewati 500 meter pertama (Z = -500)
+            // Trigger Muncul pas player lewat batas 500 meter (Z = -500)
             if (!monsterSpawned && playerZ < -500) {
                 monsterSpawned = true;
-                monster.position.set(0, 2, playerZ + 45); // Spawn 45 meter di belakang player
+                monster.position.set(0, 2, playerZ + 45); 
                 monsterState = "asthma";
                 monsterTimer = 0;
             }
@@ -157,30 +201,45 @@
 
             monsterTimer += 0.016;
 
-            // State Machine Sifat Jiwa Monster
+            // Sifat Jiwa Monster
             if (monsterState === "asthma") {
-                monsterSpeed = 0.07; // Lambat karena sesak napas
+                monsterSpeed = 0.07; 
                 document.getElementById('m-state').innerText = "*Suara Napas Berat* (Jiwa Asma: Monster Melambat!)";
                 document.getElementById('m-state').style.color = "#ffaa00";
 
-                if (monsterTimer > 5.0) { // Setelah 5 detik, jiwanya berganti menangis
+                if (monsterTimer > 5.0) { 
                     monsterState = "crying";
                     monsterTimer = 0;
                 }
             } 
             else if (monsterState === "crying") {
-                monsterSpeed = 0.22; // Lumayan cepet pas nangis hysteris!
-                document.getElementById('m-state').innerText = "*SUARA BAYI MENANGIS HISTERIS* (THE LOSS SOLL MENGAMUK!!)";
+                monsterSpeed = 0.23; // Sangat agresif pas jiwa bayi menangis histeris
+                document.getElementById('m-state').innerText = "*SUARA BAYI MENANGIS HISTERIS* (MATA NYA MELOTOT DAN MENGAMUK!!)";
                 document.getElementById('m-state').style.color = "#ff0000";
 
-                if (monsterTimer > 4.0) { // Menangis selama 4 detik, lalu capek balik ke asma
+                if (monsterTimer > 4.0) { 
                     monsterState = "asthma";
                     monsterTimer = 0;
                 }
             }
 
-            // Monster bergerak ngejar posisi Z player
+            // Pergerakan monster ngejar player
             monster.position.z -= monsterSpeed;
+
+            // ==========================================================
+            // LOGIKA TRACKING MATA (Mata Monster Otomatis Melirik Player)
+            // ==========================================================
+            let targetPos = new THREE.Vector3().copy(camera.position);
+            monster.worldToLocal(targetPos); // Konversi posisi koordinat dunia ke lokal monster
+            
+            monsterEyes.forEach(eye => {
+                eye.lookAt(targetPos); // Paksa setiap bola mata menghadap ke arah player
+            });
+
+            // Efek denyut daging/gendang secara organik
+            monster.children[0].scale.x = 1 + Math.sin(monsterTimer * 8) * 0.05;
+            monster.children[0].scale.z = 1 + Math.cos(monsterTimer * 8) * 0.05;
+            // ==========================================================
         }
 
         function animate() {
@@ -188,12 +247,11 @@
 
             requestAnimationFrame(animate);
 
-            // Kerlipan lampu lorong otomatis
             lights.forEach(l => {
                 if (Math.random() > 0.98) l.intensity = Math.random() * 1.2;
             });
 
-            // Kalkulasi Arah Gerak Player Berdasarkan Hadap Kamera (Arah Mouse)
+            // Gerakan FPS Player
             let speed = keys.shift ? sprintSpeed : normalSpeed;
             let moveDir = new THREE.Vector3();
 
@@ -203,41 +261,35 @@
             if (keys.d) moveDir.x += 1;
             
             moveDir.normalize();
-            // Putar arah gerak sejajar dengan rotasi horizontal (Y) kamera
             moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), camera.rotation.y);
-            
             camera.position.addScaledVector(moveDir, speed);
 
-            // Efek Head Bobbing (Goyang pas jalan/lari)
+            // Head Bobbing
             if (keys.w || keys.s || keys.a || keys.d) {
                 let bobFreq = keys.shift ? 2.5 : 1.5;
                 camera.position.y = 2 + Math.sin(camera.position.z * bobFreq) * 0.04;
             }
 
-            // Update Perilaku Monster
             updateMonsterAI();
 
-            // Hitung sisa jarak ke pintu (0 sampai 1000m)
+            // Hitung sisa jarak HUD
             let currentDistance = Math.round(totalDistance - Math.abs(camera.position.z));
             if (currentDistance < 0) currentDistance = 0;
             document.getElementById('distance').innerText = currentDistance;
 
-            // Efek Layar Gemetar jika monster sudah mendekat (di bawah 15 meter)
+            // Screen Shake intensitas tinggi kalau monster mendekat
             if (monsterSpawned) {
                 let distanceToMonster = monster.position.z - camera.position.z;
-                if (distanceToMonster < 15 && distanceToMonster > 0) {
-                    // Semakin dekat, getaran layar semakin hancur
-                    let shakeIntensity = (15 - distanceToMonster) * 0.01;
+                if (distanceToMonster < 18 && distanceToMonster > 0) {
+                    let shakeIntensity = (18 - distanceToMonster) * 0.015;
                     camera.position.x += (Math.random() - 0.5) * shakeIntensity;
                 }
                 
-                // CEK KALAH
                 if (monster.position.z <= camera.position.z) {
                     endGame(false);
                 }
             }
 
-            // CEK MENANG (Sampai di pintu 1000m)
             if (camera.position.z <= finishLine) {
                 endGame(true);
             }
@@ -253,7 +305,7 @@
             overlay.style.display = 'flex';
             
             if (isWin) {
-                txt.innerText = "KAMU BERHASIL SELAMAT DARI RS JIWA!";
+                txt.innerText = "KAMU BERHASIL LOLOS DARI TEROR 'AIN JUGA!";
                 txt.style.color = "#00ff00";
             } else {
                 txt.innerText = "THE LOSS SOLL MEREBUT JIWAMU!";
