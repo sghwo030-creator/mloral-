@@ -3,46 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE LOSS SOLL - 'Ain Eye Swarm Prototype</title>
+    <title>THE LOSS SOLL - 'Ain Asylum</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', Courier, monospace; user-select: none; color: #fff; }
+        
+        /* UI Screens Overlay Styling */
+        .overlay-screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10, 10, 10, 0.98); z-index: 100; text-align: center; }
+        .box-panel { background: #111; padding: 30px; border: 2px solid #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.4); border-radius: 5px; min-width: 300px; }
+        h1 { color: #ff0000; letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,0,0,0.6); }
+        
+        input[type="text"], input[type="password"], select { background: #222; border: 1px solid #555; color: #fff; padding: 10px; margin: 10px 0; width: 90%; font-family: monospace; font-size: 16px; }
+        input[type="range"] { width: 100%; accent-color: #ff0000; }
+        
+        button { background: #ff0000; color: #fff; border: none; padding: 12px 25px; font-size: 18px; font-family: monospace; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; border-radius: 3px; }
+        button:hover { background: #b30000; box-shadow: 0 0 10px #ff0000; }
+        
+        /* Loading Bar */
+        .progress-container { width: 90%; background-color: #222; border: 1px solid #ff0000; height: 25px; margin-top: 20px; position: relative; }
+        .progress-bar { width: 0%; height: 100%; background-color: #ff0000; transition: width 0.1s; }
+        #loading-text { font-size: 14px; margin-top: 10px; color: #aaa; }
+
+        /* Game HUD Layout */
+        #game-hud { position: absolute; top: 20px; left: 20px; z-index: 10; font-weight: bold; display: none; }
+        #hud-distance { color: #ff0000; font-size: 22px; text-shadow: 2px 2px #000; }
+        #hud-status { color: #fff; font-size: 15px; margin-top: 5px; text-shadow: 1px 1px #000; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); display: none; z-index: 5; }
+        
+        /* Subtitle / Monolog Box */
+        #monologue-box { position: absolute; bottom: 10%; width: 100%; text-align: center; font-size: 20px; color: #ffffaa; font-weight: bold; text-shadow: 2px 2px 4px #000; z-index: 10; display: none; padding: 0 50px; box-sizing: border-box; }
+        
         #canvas-container { width: 100vw; height: 100vh; }
-        #hud { position: absolute; top: 20px; left: 20px; color: #ff0000; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; }
-        #monster-status { position: absolute; top: 50px; left: 20px; color: #fff; font-size: 16px; text-shadow: 1px 1px #000; }
-        #instructions { position: absolute; bottom: 30px; width: 100%; text-align: center; color: #fff; font-size: 16px; text-shadow: 1px 1px #000; line-height: 1.5; }
-        #screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.95); color: white; font-size: 40px; display: none; flex-direction: column; z-index: 10; }
-        #restart-btn { margin-top: 20px; padding: 10px 20px; font-size: 20px; cursor: pointer; background: #ff0000; color: white; border: none; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); }
+        .hidden { display: none !important; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="crosshair"></div>
-    <div id="hud">Sisa Jarak: <span id="distance">1000</span>m</div>
-    <div id="monster-status">Status: <span id="m-state">Suasana sunyi... berjalanlah ke depan.</span></div>
-    
-    <div id="instructions">
-        KLIK LAYAR UNTUK MENGUNCI CURSOR MOUSE<br>
-        Gunakan [W, A, S, D] untuk bergerak | Tahan [SHIFT] untuk Sprint lari kencang
+    <div id="login-screen" class="overlay-screen">
+        <div class="box-panel">
+            <h1>THE LOSS SOLL</h1>
+            <label>MASUKKAN NAMA PASIEN:</label><br>
+            <input type="text" id="username" placeholder="Nama Anda..." value="Player1">
+            <button onclick="processLogin()">LOGIN</button>
+        </div>
     </div>
-    
-    <div id="screen-overlay">
-        <div id="overlay-text">GAME OVER</div>
+
+    <div id="loading-screen" class="overlay-screen hidden">
+        <div class="box-panel" style="width: 400px;">
+            <h2 id="load-title">MENGUNDUH DATA GAIB...</h2>
+            <div class="progress-container">
+                <div id="p-bar" class="progress-bar"></div>
+            </div>
+            <div id="loading-text">Menghubungkan ke server rumah sakit jiwa...</div>
+        </div>
+    </div>
+
+    <div id="menu-screen" class="overlay-screen hidden">
+        <div class="box-panel" style="width: 350px;">
+            <h1>MAIN MENU</h1>
+            <button onclick="startGame()" style="width: 100%; font-size: 22px; margin-bottom: 20px;">MULAI GAME</button>
+            <hr style="border-color: #333;">
+            <h3 style="color: #ff0000; margin-top: 15px;">PENGATURAN</h3>
+            
+            <label>Bahasa / Language:</label>
+            <select id="setting-lang">
+                <option value="id">Indonesia</option>
+                <option value="en">English</option>
+            </select>
+
+            <label>Sensitivitas Mouse:</label>
+            <input type="range" id="setting-sens" min="1" max="10" value="5">
+
+            <div style="margin-top: 15px; text-align: left; padding-left: 10px;">
+                <input type="checkbox" id="setting-filter" checked>
+                <label for="setting-filter" style="color: #ffaaaa; cursor: pointer;">Sensor Kata Kasar (ON)</label>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-overlay" class="overlay-screen hidden">
+        <div id="overlay-text" style="font-size: 40px; font-weight: bold; margin-bottom: 10px;">GAME OVER</div>
         <button id="restart-btn" onclick="resetGame()">Coba Lagi</button>
     </div>
+
+    <div id="crosshair"></div>
+    <div id="game-hud">
+        <div id="hud-distance">Sisa Jarak: <span id="distance">1000</span>m</div>
+        <div id="hud-status">Status: <span id="m-state">Suasana sunyi...</span></div>
+    </div>
+    <div id="monologue-box"></div>
 
     <div id="canvas-container"></div>
 
     <script>
+        // Game Engine Variables
         let scene, camera, renderer, monster, door;
         let lights = [];
         let gameOver = false;
+        let gameActive = false;
         let monsterSpawned = false;
-        let monsterEyes = []; // Array penampung mata pelacak
+        let monsterEyes = [];
         
         let keys = { w: false, a: false, s: false, d: false, shift: false };
-        
         const totalDistance = 1000;
         const finishLine = -totalDistance; 
         let normalSpeed = 0.08;
@@ -52,7 +114,124 @@
         let monsterTimer = 0;
         let monsterState = "idle"; 
 
-        function init() {
+        // Config & Settings Object
+        let config = {
+            username: "Player",
+            lang: "id",
+            sensitivity: 0.0025,
+            profanityFilter: true
+        };
+
+        // Monologue State Triggers
+        let triggeredMonologue1 = false;
+        let triggeredMonologue2 = false;
+
+        // --- PHASE 1: LOGIN PROCESSING ---
+        function processLogin() {
+            let user = document.getElementById('username').value.trim();
+            if(user === "") user = "Pasien Anonim";
+            config.username = user;
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            runLoadingSimulator();
+        }
+
+        // --- PHASE 2: LOADING SCREEN SIMULATOR ---
+        function runLoadingSimulator() {
+            let bar = document.getElementById('p-bar');
+            let txt = document.getElementById('loading-text');
+            let width = 0;
+            
+            // Log lucu simulasi typo download sesuatu
+            let logs = [
+                "Menghubungkan jaringan...",
+                "Mengunduh aset lorong 1000 meter...",
+                "Mengunduh sepatu pasien... Eh salah, mengunduh file audio!",
+                "Menanam 30 mata kutukan pada monster THE LOSS SOLL...",
+                "Sinkronisasi jiwa-jiwa penderita asma...",
+                "Menyiapkan ruangan isolasi...",
+                "Selesai! Membuka gerbang neraka..."
+            ];
+
+            let interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('menu-screen').classList.remove('hidden');
+                } else {
+                    width += Math.random() * 4;
+                    if(width > 100) width = 100;
+                    bar.style.width = width + '%';
+                    
+                    let logIndex = Math.floor((width / 100) * logs.length);
+                    if(logIndex >= logs.length) logIndex = logs.length - 1;
+                    txt.innerText = logs[logIndex] + ` (${Math.floor(width)}%)`;
+                }
+            }, 80);
+        }
+
+        // --- PHASE 3: GAME START WITH SETTINGS APPLY ---
+        function startGame() {
+            // Tarik konfigurasi dari menu pengaturan UI
+            config.lang = document.getElementById('setting-lang').value;
+            let rawSens = document.getElementById('setting-sens').value;
+            config.sensitivity = rawSens * 0.0005; // Konversi slider ke skala Three.js
+            config.profanityFilter = document.getElementById('setting-filter').checked;
+
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-hud').style.display = 'block';
+            document.getElementById('crosshair').style.display = 'block';
+            document.getElementById('monologue-box').style.display = 'block';
+            
+            gameActive = true;
+            document.body.requestPointerLock();
+            
+            // Trigger dialog awal masuk game
+            showMonologue(config.lang === "id" ? 
+                `[${config.username}]: Sial... kepala gua pusing. Tempat apaan ini? Gelap banget, gua harus nyari jalan keluar lewat depan...` :
+                `[${config.username}]: Damn... my head hurts. What is this place? It's pitch black, I must find a way out ahead...`, 4000);
+
+            initEngine();
+        }
+
+        // --- LOGIKA SENSOR KATA KASAR (PROFANITY FILTER) ---
+        function filterProfanity(text) {
+            if (!config.profanityFilter) return text; // Kalo filter mati, losss kata kasarnya keluar semua!
+
+            // Kamus sensor otomatis kata kasar rekues user
+            let badWords = {
+                "bangsat": "B*******",
+                "anjing": "A*****",
+                "kontol": "K*****",
+                "babi": "B***",
+                "asu": "A**"
+            };
+
+            let censoredText = text;
+            for (let word in badWords) {
+                let regex = new RegExp(word, "gi");
+                censoredText = censoredText.replace(regex, badWords[word]);
+            }
+            return censoredText;
+        }
+
+        function showMonologue(text, duration) {
+            let processedText = filterProfanity(text);
+            let box = document.getElementById('monologue-box');
+            box.innerText = processedText;
+            box.style.display = 'block';
+            
+            // Hapus text setelah durasi selesai
+            setTimeout(() => {
+                if(box.innerText === processedText) {
+                    box.innerText = "";
+                }
+            }, duration);
+        }
+
+        // --- THREE.JS ENGINE INITIALIZATION ---
+        function initEngine() {
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x020202, 0.08); 
 
@@ -64,41 +243,27 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Bikin Lorong RS Jiwa Sepanjang 1000 Meter
+            // Bangun Lorong
             const corridorGeo = new THREE.BoxGeometry(6, 5, totalDistance + 50);
-            const corridorMat = new THREE.MeshStandardMaterial({ 
-                color: 0x16221b, 
-                side: THREE.BackSide,
-                roughness: 0.9
-            });
+            const corridorMat = new THREE.MeshStandardMaterial({ color: 0x16221b, side: THREE.BackSide, roughness: 0.9 });
             const corridor = new THREE.Mesh(corridorGeo, corridorMat);
             corridor.position.set(0, 2.5, -totalDistance / 2);
             scene.add(corridor);
 
-            // Pintu Darurat di ujung 1000m
+            // Pintu Finish
             const doorGeo = new THREE.BoxGeometry(2.5, 4, 0.2);
             const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a0e0e, roughness: 0.6 });
             door = new THREE.Mesh(doorGeo, doorMat);
             door.position.set(0, 2, finishLine);
             scene.add(door);
 
-            // ==========================================================
-            // PROSES SPAWN MONSTER: CUSTOM ABSTRACT DRUM + EYE SWARM
-            // ==========================================================
+            // Bikin Monster THE LOSS SOLL (Bentuk Gendang Kulit Daging + Eye Swarm)
             monster = new THREE.Group();
-
-            // 1. Badan Utama (Silinder Gendang Panjang dari Kulit Darah)
             const bodyGeo = new THREE.CylinderGeometry(0.7, 1.1, 5, 16);
-            const bodyMat = new THREE.MeshStandardMaterial({ 
-                color: 0x4a0505, // Merah daging/darah busuk pekat
-                roughness: 0.8, 
-                metalness: 0.2,
-                emissive: 0x1a0000 
-            });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a0505, roughness: 0.8, metalness: 0.2, emissive: 0x1a0000 });
             const mainBody = new THREE.Mesh(bodyGeo, bodyMat);
             monster.add(mainBody);
 
-            // 2. Aksen Lipatan Kulit melingkar menyerupai Gendang
             for(let i = 0; i < 4; i++) {
                 const ringGeo = new THREE.TorusGeometry(0.9, 0.13, 8, 16);
                 const ring = new THREE.Mesh(ringGeo, bodyMat);
@@ -107,7 +272,6 @@
                 monster.add(ring);
             }
 
-            // 3. Pasang Kluster 30 Bola Mata Terinspirasi dari Poster 'Ain
             const eyeGeo = new THREE.SphereGeometry(0.2, 16, 16);
             const pupilGeo = new THREE.SphereGeometry(0.08, 8, 8);
             const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -115,32 +279,24 @@
 
             for (let i = 0; i < 30; i++) {
                 const eyeGroup = new THREE.Group();
-                
-                // Bagian putih mata
                 const sclera = new THREE.Mesh(eyeGeo, scleraMat);
                 eyeGroup.add(sclera);
-                
-                // Pupil hitam pekat
                 const pupil = new THREE.Mesh(pupilGeo, pupilMat);
                 pupil.position.z = 0.16; 
                 eyeGroup.add(pupil);
                 
-                // Tempel secara acak melingkari badan silinder monster
                 let angle = Math.random() * Math.PI * 2;
                 let height = (Math.random() - 0.5) * 4.2;
-                let radius = 0.85; // Menempel di permukaan silinder daging
-                
+                let radius = 0.85; 
                 eyeGroup.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
                 
                 monster.add(eyeGroup);
-                monsterEyes.push(eyeGroup); // Disimpan ke array global untuk tracking kamera
+                monsterEyes.push(eyeGroup);
             }
-
-            monster.position.set(0, -10, 0); // Sembunyi di bawah map sebelum dipanggil
+            monster.position.set(0, -10, 0); 
             scene.add(monster);
-            // ==========================================================
 
-            // Flashlight / Senter Player
+            // Senter Player
             const flashlight = new THREE.SpotLight(0xffffff, 2.5, 35, Math.PI / 5, 0.6, 1);
             camera.add(flashlight);
             flashlight.position.set(0, 0, 0);
@@ -149,7 +305,7 @@
             flashlight.target.position.set(0, 0, -1);
             scene.add(camera);
 
-            // Lampu gantung lorong (Tiap 100m)
+            // Lampu Gantung Lorong
             for(let z = -100; z >= -900; z -= 100) {
                 let light = new THREE.PointLight(0x667766, 0.5, 20);
                 light.position.set(0, 4.5, z);
@@ -157,17 +313,17 @@
                 lights.push(light);
             }
 
-            // Mouse Look Lock
-            window.addEventListener('click', () => {
-                document.body.requestPointerLock();
-            });
-
+            // Mouse Look Controller (Menggunakan variabel sensitivitas dari pengaturan)
             document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === document.body) {
-                    camera.rotation.y -= e.movementX * 0.0025; 
-                    camera.rotation.x -= e.movementY * 0.0025; 
+                if (document.pointerLockElement === document.body && !gameOver) {
+                    camera.rotation.y -= e.movementX * config.sensitivity; 
+                    camera.rotation.x -= e.movementY * config.sensitivity; 
                     camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
                 }
+            });
+
+            window.addEventListener('click', () => {
+                if (gameActive && !gameOver) document.body.requestPointerLock();
             });
 
             window.addEventListener('keydown', (e) => handleKey(e, true));
@@ -189,22 +345,29 @@
         function updateMonsterAI() {
             let playerZ = camera.position.z;
 
-            // Trigger Muncul pas player lewat batas 500 meter (Z = -500)
+            // Kilometer 500 Trigger Monster Spawn + Monolog Panik Kasar
             if (!monsterSpawned && playerZ < -500) {
                 monsterSpawned = true;
                 monster.position.set(0, 2, playerZ + 45); 
                 monsterState = "asthma";
                 monsterTimer = 0;
+
+                // Trigger Monolog Sumpah Serapah Histeris
+                if(!triggeredMonologue2) {
+                    triggeredMonologue2 = true;
+                    showMonologue(config.lang === "id" ?
+                        `[${config.username}]: BANGSAT! Suara apaan itu di belakang?! ANJING, dia ngejar gua! BANGBAT, ANAK ASU, MONSTER ANJING!!! LARI!!!!` :
+                        `[${config.username}]: BASTARD! What the hell is that sound behind me?! SHIT, it's chasing me! SON OF A BITCH, RUN!!!!`, 6000);
+                }
             }
 
             if (!monsterSpawned) return;
 
             monsterTimer += 0.016;
 
-            // Sifat Jiwa Monster
             if (monsterState === "asthma") {
                 monsterSpeed = 0.07; 
-                document.getElementById('m-state').innerText = "*Suara Napas Berat* (Jiwa Asma: Monster Melambat!)";
+                document.getElementById('m-state').innerText = config.lang === "id" ? "*Napas Berat* (Jiwa Asma: Lambat)" : "*Heavy Breathing* (Asthma Soul: Slow)";
                 document.getElementById('m-state').style.color = "#ffaa00";
 
                 if (monsterTimer > 5.0) { 
@@ -213,8 +376,8 @@
                 }
             } 
             else if (monsterState === "crying") {
-                monsterSpeed = 0.23; // Sangat agresif pas jiwa bayi menangis histeris
-                document.getElementById('m-state').innerText = "*SUARA BAYI MENANGIS HISTERIS* (MATA NYA MELOTOT DAN MENGAMUK!!)";
+                monsterSpeed = 0.23; 
+                document.getElementById('m-state').innerText = config.lang === "id" ? "*BAYI MENANGIS HISTERIS* (MENGAMUK!!)" : "*BABY CRYING HYSTERICALLY* (RAGING!!)";
                 document.getElementById('m-state').style.color = "#ff0000";
 
                 if (monsterTimer > 4.0) { 
@@ -223,35 +386,27 @@
                 }
             }
 
-            // Pergerakan monster ngejar player
             monster.position.z -= monsterSpeed;
 
-            // ==========================================================
-            // LOGIKA TRACKING MATA (Mata Monster Otomatis Melirik Player)
-            // ==========================================================
+            // MATA MELOTOT TRACKING PLAYER
             let targetPos = new THREE.Vector3().copy(camera.position);
-            monster.worldToLocal(targetPos); // Konversi posisi koordinat dunia ke lokal monster
-            
-            monsterEyes.forEach(eye => {
-                eye.lookAt(targetPos); // Paksa setiap bola mata menghadap ke arah player
-            });
+            monster.worldToLocal(targetPos);
+            monsterEyes.forEach(eye => { eye.lookAt(targetPos); });
 
-            // Efek denyut daging/gendang secara organik
+            // Denyutan Silinder Gendang Daging
             monster.children[0].scale.x = 1 + Math.sin(monsterTimer * 8) * 0.05;
             monster.children[0].scale.z = 1 + Math.cos(monsterTimer * 8) * 0.05;
-            // ==========================================================
         }
 
         function animate() {
-            if (gameOver) return;
+            if (gameOver || !gameActive) return;
 
             requestAnimationFrame(animate);
 
-            lights.forEach(l => {
-                if (Math.random() > 0.98) l.intensity = Math.random() * 1.2;
-            });
+            // Flickering lights
+            lights.forEach(l => { if (Math.random() > 0.98) l.intensity = Math.random() * 1.2; });
 
-            // Gerakan FPS Player
+            // Movement Player
             let speed = keys.shift ? sprintSpeed : normalSpeed;
             let moveDir = new THREE.Vector3();
 
@@ -272,27 +427,22 @@
 
             updateMonsterAI();
 
-            // Hitung sisa jarak HUD
+            // Jarak Sisa Ke Pintu
             let currentDistance = Math.round(totalDistance - Math.abs(camera.position.z));
             if (currentDistance < 0) currentDistance = 0;
             document.getElementById('distance').innerText = currentDistance;
 
-            // Screen Shake intensitas tinggi kalau monster mendekat
+            // Getaran Kamera pas monster deket
             if (monsterSpawned) {
                 let distanceToMonster = monster.position.z - camera.position.z;
                 if (distanceToMonster < 18 && distanceToMonster > 0) {
                     let shakeIntensity = (18 - distanceToMonster) * 0.015;
                     camera.position.x += (Math.random() - 0.5) * shakeIntensity;
                 }
-                
-                if (monster.position.z <= camera.position.z) {
-                    endGame(false);
-                }
+                if (monster.position.z <= camera.position.z) endGame(false);
             }
 
-            if (camera.position.z <= finishLine) {
-                endGame(true);
-            }
+            if (camera.position.z <= finishLine) endGame(true);
 
             renderer.render(scene, camera);
         }
@@ -302,13 +452,13 @@
             document.exitPointerLock();
             const overlay = document.getElementById('screen-overlay');
             const txt = document.getElementById('overlay-text');
-            overlay.style.display = 'flex';
+            overlay.classList.remove('hidden');
             
             if (isWin) {
-                txt.innerText = "KAMU BERHASIL LOLOS DARI TEROR 'AIN JUGA!";
+                txt.innerText = config.lang === "id" ? "KAMU BERHASIL LOLOS!" : "YOU SURVIVED THE TERRORES!";
                 txt.style.color = "#00ff00";
             } else {
-                txt.innerText = "THE LOSS SOLL MEREBUT JIWAMU!";
+                txt.innerText = config.lang === "id" ? "THE LOSS SOLL MEMAKAN JIWAMU!" : "THE LOSS SOLL TOOK YOUR SOUL!";
                 txt.style.color = "#ff0000";
             }
         }
@@ -316,13 +466,19 @@
         function resetGame() {
             gameOver = false;
             monsterSpawned = false;
+            triggeredMonologue1 = false;
+            triggeredMonologue2 = false;
             camera.position.set(0, 2, 0);
             camera.rotation.set(0, 0, 0);
             monster.position.set(0, -10, 0);
             monsterState = "idle";
-            document.getElementById('m-state').innerText = "Suasana sunyi... berjalanlah ke depan.";
+            document.getElementById('m-state').innerText = "Suasana sunyi...";
             document.getElementById('m-state').style.color = "#fff";
-            document.getElementById('screen-overlay').style.display = 'none';
+            document.getElementById('screen-overlay').classList.add('hidden');
+            document.body.requestPointerLock();
+            
+            showMonologue(config.lang === "id" ? `[${config.username}]: Sial... gua balik lagi ke ujung lorong ini...` : `[${config.username}]: Dammit... I am back at the end of this corridor...`, 3000);
+            
             animate();
         }
 
@@ -331,8 +487,6 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
-
-        init();
     </script>
 </body>
 </html>
