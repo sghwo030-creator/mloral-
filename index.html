@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE LOSS SOLL - 'Ain Asylum (Fixed Localization)</title>
+    <title>THE LOSS SOLL - 'Ain Asylum (Perfect UX Flow)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', Courier, monospace; user-select: none; color: #fff; }
         
         /* UI Screens Overlay Styling */
         .overlay-screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10, 10, 10, 0.98); z-index: 100; text-align: center; }
-        .box-panel { background: #111; padding: 30px; border: 2px solid #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.4); border-radius: 5px; min-width: 300px; }
-        h1 { color: #ff0000; letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,0,0,0.6); }
+        .box-panel { background: #111; padding: 30px; border: 2px solid #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.4); border-radius: 5px; min-width: 350px; }
+        h1 { color: #ff0000; letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,0,0,0.6); margin-top: 0; }
+        h3 { margin-top: 15px; margin-bottom: 10px; }
         
-        input[type="text"], select { background: #222; border: 1px solid #555; color: #fff; padding: 10px; margin: 10px 0; width: 90%; font-family: monospace; font-size: 16px; }
-        input[type="range"] { width: 100%; accent-color: #ff0000; }
+        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; text-align: left; }
+        input[type="text"], select { background: #222; border: 1px solid #555; color: #fff; padding: 10px; margin-bottom: 10px; width: 100%; font-family: monospace; font-size: 16px; box-sizing: border-box; }
+        input[type="range"] { width: 100%; accent-color: #ff0000; margin-bottom: 15px; }
         
-        button { background: #ff0000; color: #fff; border: none; padding: 12px 25px; font-size: 18px; font-family: monospace; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; border-radius: 3px; }
+        button { background: #ff0000; color: #fff; border: none; padding: 12px 25px; font-size: 18px; font-family: monospace; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; border-radius: 3px; width: 100%; }
         button:hover { background: #b30000; box-shadow: 0 0 10px #ff0000; }
         
         /* Loading Bar */
-        .progress-container { width: 90%; background-color: #222; border: 1px solid #ff0000; height: 25px; margin-top: 20px; position: relative; }
+        .progress-container { width: 100%; background-color: #222; border: 1px solid #ff0000; height: 25px; margin-top: 20px; position: relative; box-sizing: border-box; }
         .progress-bar { width: 0%; height: 100%; background-color: #ff0000; transition: width 0.1s; }
         #loading-text { font-size: 14px; margin-top: 10px; color: #aaa; }
 
@@ -40,52 +42,51 @@
 </head>
 <body>
 
-    <!-- CROSSHAIR & INSTRUCTIONS -->
     <div id="crosshair"></div>
     <div id="instructions"></div>
-    
-    <!-- 1. LOGIN SCREEN -->
-    <div id="login-screen" class="overlay-screen">
+
+    <!-- 1. MAIN MENU & SETTINGS SCREEN (SEKARANG MUNCUL PALING AWAL) -->
+    <div id="menu-screen" class="overlay-screen">
         <div class="box-panel">
-            <h1>THE LOSS SOLL</h1>
-            <label>MASUKKAN NAMA PASIEN:</label><br>
-            <input type="text" id="username" placeholder="Nama Anda..." value="Player1">
-            <button onclick="processLogin()">LOGIN</button>
-        </div>
-    </div>
-
-    <!-- 2. LOADING SCREEN (DOWNLOAD SIMULATOR) -->
-    <div id="loading-screen" class="overlay-screen hidden">
-        <div class="box-panel" style="width: 400px;">
-            <h2>MENGUNDUH DATA GAIB...</h2>
-            <div class="progress-container">
-                <div id="p-bar" class="progress-bar"></div>
-            </div>
-            <div id="loading-text">Menghubungkan ke server...</div>
-        </div>
-    </div>
-
-    <!-- 3. MAIN MENU & SETTINGS SCREEN -->
-    <div id="menu-screen" class="overlay-screen hidden">
-        <div class="box-panel" style="width: 350px;">
-            <h1>MAIN MENU</h1>
-            <button onclick="startGame()" style="width: 100%; font-size: 22px; margin-bottom: 20px;">MULAI GAME</button>
-            <hr style="border-color: #333;">
-            <h3 style="color: #ff0000; margin-top: 15px;">PENGATURAN / SETTINGS</h3>
+            <h1 id="menu-title">MAIN MENU</h1>
+            <button id="btn-play" onclick="goToLogin()">MULAI GAME</button>
+            <hr style="border-color: #333; margin-top: 20px;">
+            <h3 id="menu-settings-title" style="color: #ff0000;">PENGATURAN / SETTINGS</h3>
             
-            <label>Bahasa / Language:</label>
-            <select id="setting-lang">
+            <label id="lbl-lang">Bahasa / Language:</label>
+            <select id="setting-lang" onchange="updateMenuLanguage()">
                 <option value="id">Indonesia</option>
                 <option value="en">English</option>
             </select>
 
-            <label>Sensitivitas Mouse:</label>
+            <label id="lbl-sens">Sensitivitas Mouse:</label>
             <input type="range" id="setting-sens" min="1" max="10" value="5">
 
-            <div style="margin-top: 15px; text-align: left; padding-left: 10px;">
+            <div style="margin-top: 15px; text-align: left;">
                 <input type="checkbox" id="setting-filter" checked>
-                <label for="setting-filter" style="color: #ffaaaa; cursor: pointer;">Sensor Kata Kasar (ON)</label>
+                <label id="lbl-filter" for="setting-filter" style="color: #ffaaaa; cursor: pointer; display: inline;">Sensor Kata Kasar (ON)</label>
             </div>
+        </div>
+    </div>
+
+    <!-- 2. LOGIN SCREEN (MUNCUL SETELAH KLIK PLAY) -->
+    <div id="login-screen" class="overlay-screen hidden">
+        <div class="box-panel">
+            <h1 id="login-title">THE LOSS SOLL</h1>
+            <label id="lbl-username">MASUKKAN NAMA PASIEN:</label>
+            <input type="text" id="username" placeholder="..." value="Player1">
+            <button id="btn-login" onclick="processLogin()">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- 3. LOADING SCREEN (DOWNLOAD SIMULATOR) -->
+    <div id="loading-screen" class="overlay-screen hidden">
+        <div class="box-panel" style="width: 400px;">
+            <h2 id="load-title">MENGUNDUH DATA GAIB...</h2>
+            <div class="progress-container">
+                <div id="p-bar" class="progress-bar"></div>
+            </div>
+            <div id="loading-text">Connecting...</div>
         </div>
     </div>
 
@@ -97,8 +98,8 @@
 
     <!-- 5. GAME UI INTERFACE -->
     <div id="game-hud">
-        <div id="hud-distance"><span id="lbl-distance">Sisa Jarak: </span><span id="distance">1000</span>m</div>
-        <div id="hud-status"><span id="lbl-status">Status: </span><span id="m-state">...</span></div>
+        <div id="hud-distance"><span id="lbl-distance-hud">Sisa Jarak: </span><span id="distance">1000</span>m</div>
+        <div id="hud-status"><span id="lbl-status-hud">Status: </span><span id="m-state">...</span></div>
     </div>
     <div id="monologue-box"></div>
 
@@ -123,7 +124,7 @@
         let monsterTimer = 0;
         let monsterState = "idle"; 
 
-        // Config & Settings
+        // Config & Settings Default
         let config = {
             username: "Player",
             lang: "id",
@@ -134,10 +135,20 @@
         let triggeredMonologue2 = false;
 
         // ==========================================================
-        // KAMUS KAMUS KAMUS - MASTER LOCALIZATION DICTIONARY
+        // DICTIONARY LOCALIZATION LENGKAP UTK TOTAL UI SEJAK AWAL
         // ==========================================================
         const translations = {
             id: {
+                menuTitle: "MAIN MENU",
+                btnPlay: "MULAI GAME",
+                settingsTitle: "PENGATURAN",
+                lblLang: "Bahasa / Language:",
+                lblSens: "Sensitivitas Mouse:",
+                lblFilter: "Sensor Kata Kasar (ON)",
+                loginTitle: "REGISTRASI PASIEN",
+                lblUsername: "MASUKKAN NAMA PASIEN:",
+                btnLogin: "MASUK",
+                loadTitle: "MENGUNDUH DATA GAIB...",
                 distanceLabel: "Sisa Jarak: ",
                 statusLabel: "Status: ",
                 statusQuiet: "Suasana sunyi... berjalanlah ke depan.",
@@ -152,6 +163,16 @@
                 monologueReset: (name) => `[${name}]: Sial... gua balik lagi ke ujung lorong ini...`
             },
             en: {
+                menuTitle: "MAIN MENU",
+                btnPlay: "PLAY GAME",
+                settingsTitle: "SETTINGS",
+                lblLang: "Language / Bahasa:",
+                lblSens: "Mouse Sensitivity:",
+                lblFilter: "Profanity Filter (ON)",
+                loginTitle: "PATIENT REGISTRATION",
+                lblUsername: "ENTER PATIENT NAME:",
+                btnLogin: "ENTER ASYLUM",
+                loadTitle: "DOWNLOADING PARANORMAL DATA...",
                 distanceLabel: "Distance Left: ",
                 statusLabel: "Status: ",
                 statusQuiet: "It is dead silent... keep walking forward.",
@@ -167,56 +188,123 @@
             }
         };
 
-        // --- PHASE 1: LOGIN ---
+        // --- UPDATE BAHASA INSTAN DI MENU UTAMA ---
+        function updateMenuLanguage() {
+            let currentLang = document.getElementById('setting-lang').value;
+            config.lang = currentLang; // Save temporary selection
+            
+            // Ubah text menu seketika saat dropdown di-klik
+            document.getElementById('menu-title').innerText = translations[currentLang].menuTitle;
+            document.getElementById('btn-play').innerText = translations[currentLang].btnPlay;
+            document.getElementById('menu-settings-title').innerText = translations[currentLang].settingsTitle;
+            document.getElementById('lbl-lang').innerText = translations[currentLang].lblLang;
+            document.getElementById('lbl-sens').innerText = translations[currentLang].lblSens;
+            document.getElementById('lbl-filter').innerText = translations[currentLang].lblFilter;
+        }
+
+        // --- STEP 1: MENU -> GO TO LOGIN ---
+        function goToLogin() {
+            // Ambil data pengaturan final dari menu
+            let rawSens = document.getElementById('setting-sens').value;
+            config.sensitivity = rawSens * 0.0005; 
+            config.profanityFilter = document.getElementById('setting-filter').checked;
+            
+            let lang = config.lang;
+
+            // Update bahasa teks di screen login sebelum dimunculkan
+            document.getElementById('login-title').innerText = translations[lang].loginTitle;
+            document.getElementById('lbl-username').innerText = translations[lang].lblUsername;
+            document.getElementById('btn-login').innerText = translations[lang].btnLogin;
+            document.getElementById('username').placeholder = lang === "id" ? "Nama..." : "Name...";
+
+            // Pindah screen UI
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        // --- STEP 2: LOGIN -> GO TO LOADING SCREEN ---
         function processLogin() {
             let user = document.getElementById('username').value.trim();
-            if(user === "") user = "Patient-01";
+            if(user === "") {
+                user = config.lang === "id" ? "Pasien Anonim" : "Anonymous Patient";
+            }
             config.username = user;
 
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
+            
+            // Set judul loading berdasarkan bahasa
+            document.getElementById('load-title').innerText = translations[config.lang].loadTitle;
+            
             runLoadingSimulator();
         }
 
-        // --- PHASE 2: LOADING SCREEN ---
+        // --- STEP 3: LOADING ENGINE SIMULATOR ---
         function runLoadingSimulator() {
             let bar = document.getElementById('p-bar');
             let txt = document.getElementById('loading-text');
             let width = 0;
             
-            let logs = [
-                "Connecting to server...",
-                "Downloading corridor assets...",
-                "Downloading shoes... Wait, downloading audio environment files instead!",
-                "Injecting 30 cursed eyes into THE LOSS SOLL...",
-                "Syncing asthma victim multi-souls...",
-                "Readying panic engines...",
-                "Done! Opening the gates..."
+            // Kamus logs simulator loading dlm 2 bahasa biar makin mantap detailnya
+            let logsID = [
+                "Menghubungkan jaringan gaib...",
+                "Mengunduh aset lorong 1000 meter...",
+                "Mengunduh sepatu hantu... Eh maksudnya file audio!",
+                "Menanam 30 mata terkutuk pada tubuh THE LOSS SOLL...",
+                "Sinkronisasi jiwa penderita asma...",
+                "Menyiapkan ruangan isolasi rumah sakit jiwa...",
+                "Selesai! Membuka gerbang..."
             ];
+
+            let logsEN = [
+                "Connecting to paranormal server...",
+                "Downloading 1000-meter corridor mesh...",
+                "Downloading phantom shoes... Wait, downloading audio files!",
+                "Grafting 30 cursed eyes onto THE LOSS SOLL body...",
+                "Syncing asthma multi-soul frequencies...",
+                "Preparing psychiatric ward isolation cells...",
+                "Complete! Opening the asylum gates..."
+            ];
+
+            let activeLogs = config.lang === "id" ? logsID : logsEN;
 
             let interval = setInterval(() => {
                 if (width >= 100) {
                     clearInterval(interval);
                     document.getElementById('loading-screen').classList.add('hidden');
-                    document.getElementById('menu-screen').classList.remove('hidden');
+                    
+                    // Nyalakan HUD permainan
+                    document.getElementById('game-hud').style.display = 'block';
+                    document.getElementById('crosshair').style.display = 'block';
+                    document.getElementById('instructions').style.display = 'block';
+                    document.getElementById('monologue-box').style.display = 'block';
+                    
+                    // Finalisasi lokalisasi HUD gameplay
+                    applyGameplayLocalization();
+
+                    gameActive = true;
+                    document.body.requestPointerLock();
+                    
+                    // Trigger Monolog Pertama kali masuk
+                    showMonologue(translations[config.lang].monologueStart(config.username), 4000);
+
+                    initEngine();
                 } else {
                     width += Math.random() * 5;
                     if(width > 100) width = 100;
                     bar.style.width = width + '%';
-                    let logIndex = Math.floor((width / 100) * logs.length);
-                    if(logIndex >= logs.length) logIndex = logs.length - 1;
-                    txt.innerText = logs[logIndex] + ` (${Math.floor(width)}%)`;
+                    let logIndex = Math.floor((width / 100) * activeLogs.length);
+                    if(logIndex >= activeLogs.length) logIndex = activeLogs.length - 1;
+                    txt.innerText = activeLogs[logIndex] + ` (${Math.floor(width)}%)`;
                 }
-            }, 70);
+            }, 60);
         }
 
-        // --- PHASE 3: APPLY SETTINGS & LANGUAGES TRANSLATIONS ---
-        function applyLocalization() {
+        // --- SET TEKS GAMEPLAY SESUAI BAHASA ---
+        function applyGameplayLocalization() {
             let lang = config.lang;
-            
-            // Perbarui text static HUD & overlay menu berdasarkan objek translasi
-            document.getElementById('lbl-distance').innerText = translations[lang].distanceLabel;
-            document.getElementById('lbl-status').innerText = translations[lang].statusLabel;
+            document.getElementById('lbl-distance-hud').innerText = translations[lang].distanceLabel;
+            document.getElementById('lbl-status-hud').innerText = translations[lang].statusLabel;
             document.getElementById('instructions').innerHTML = translations[lang].instructions;
             document.getElementById('restart-btn').innerText = translations[lang].restartBtn;
             
@@ -225,35 +313,10 @@
             }
         }
 
-        function startGame() {
-            config.lang = document.getElementById('setting-lang').value;
-            let rawSens = document.getElementById('setting-sens').value;
-            config.sensitivity = rawSens * 0.0005; 
-            config.profanityFilter = document.getElementById('setting-filter').checked;
-
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('game-hud').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('instructions').style.display = 'block';
-            document.getElementById('monologue-box').style.display = 'block';
-            
-            // Terapkan translasi bahasa terpilih sebelum game render
-            applyLocalization();
-
-            gameActive = true;
-            document.body.requestPointerLock();
-            
-            // Panggil monolog awal game sesuai bahasa
-            showMonologue(translations[config.lang].monologueStart(config.username), 4000);
-
-            initEngine();
-        }
-
         // --- PROFANITY FILTER ---
         function filterProfanity(text) {
             if (!config.profanityFilter) return text; 
 
-            // Sensor kata kasar rekues lu
             let badWords = {
                 "bangsat": "B*******",
                 "anjing": "A*****",
@@ -283,8 +346,13 @@
             }, duration);
         }
 
-        // --- ENGINE ---
+        // --- THREE.JS ENGINE ---
         function initEngine() {
+            // Bersihkan sisa render lama jika ada reset
+            if(renderer) {
+                document.getElementById('canvas-container').innerHTML = '';
+            }
+
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x020202, 0.08); 
 
@@ -296,20 +364,24 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
+            // Buat Lorong
             const corridorGeo = new THREE.BoxGeometry(6, 5, totalDistance + 50);
             const corridorMat = new THREE.MeshStandardMaterial({ color: 0x16221b, side: THREE.BackSide, roughness: 0.9 });
             const corridor = new THREE.Mesh(corridorGeo, corridorMat);
             corridor.position.set(0, 2.5, -totalDistance / 2);
             scene.add(corridor);
 
+            // Pintu keluar
             const doorGeo = new THREE.BoxGeometry(2.5, 4, 0.2);
             const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a0e0e, roughness: 0.6 });
             door = new THREE.Mesh(doorGeo, doorMat);
             door.position.set(0, 2, finishLine);
             scene.add(door);
 
-            // Monster
+            // Pembuatan Tubuh Monster Gendang Kulit + Eye Swarm
             monster = new THREE.Group();
+            monsterEyes = []; // Reset array mata
+            
             const bodyGeo = new THREE.CylinderGeometry(0.7, 1.1, 5, 16);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4a0505, roughness: 0.8, metalness: 0.2, emissive: 0x1a0000 });
             const mainBody = new THREE.Mesh(bodyGeo, bodyMat);
@@ -347,7 +419,7 @@
             monster.position.set(0, -10, 0); 
             scene.add(monster);
 
-            // Senter
+            // Senter Player
             const flashlight = new THREE.SpotLight(0xffffff, 2.5, 35, Math.PI / 5, 0.6, 1);
             camera.add(flashlight);
             flashlight.position.set(0, 0, 0);
@@ -356,6 +428,7 @@
             flashlight.target.position.set(0, 0, -1);
             scene.add(camera);
 
+            // Lampu Langit-langit
             for(let z = -100; z >= -900; z -= 100) {
                 let light = new THREE.PointLight(0x667766, 0.5, 20);
                 light.position.set(0, 4.5, z);
@@ -363,24 +436,30 @@
                 lights.push(light);
             }
 
-            document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === document.body && !gameOver) {
-                    camera.rotation.y -= e.movementX * config.sensitivity; 
-                    camera.rotation.x -= e.movementY * config.sensitivity; 
-                    camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
-                }
-            });
-
-            window.addEventListener('click', () => {
-                if (gameActive && !gameOver) document.body.requestPointerLock();
-            });
-
-            window.addEventListener('keydown', (e) => handleKey(e, true));
-            window.addEventListener('keyup', (e) => handleKey(e, false));
+            // Mouse Look Controller
+            document.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('click', onSceneClick);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
             window.addEventListener('resize', onWindowResize);
 
             animate();
         }
+
+        function onMouseMove(e) {
+            if (document.pointerLockElement === document.body && !gameOver && gameActive) {
+                camera.rotation.y -= e.movementX * config.sensitivity; 
+                camera.rotation.x -= e.movementY * config.sensitivity; 
+                camera.rotation.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, camera.rotation.x));
+            }
+        }
+
+        function onSceneClick() {
+            if (gameActive && !gameOver) document.body.requestPointerLock();
+        }
+
+        function onKeyDown(e) { handleKey(e, true); }
+        function onKeyUp(e) { handleKey(e, false); }
 
         function handleKey(e, isDown) {
             let key = e.key.toLowerCase();
@@ -402,7 +481,6 @@
                 monsterState = "asthma";
                 monsterTimer = 0;
 
-                // Panggil monolog panik sumpah serapah sesuai objek bahasa
                 showMonologue(translations[lang].monologueChase(config.username), 6000);
             }
 
@@ -410,7 +488,6 @@
 
             monsterTimer += 0.016;
 
-            // Ambil teks deskripsi status langsung dari kamus terjemahan
             if (monsterState === "asthma") {
                 monsterSpeed = 0.07; 
                 document.getElementById('m-state').innerText = translations[lang].asthma;
@@ -434,11 +511,12 @@
 
             monster.position.z -= monsterSpeed;
 
-            // Tracking mata melotot
+            // MATA MELOTOT TRACKING PLAYER AUTOMATIC
             let targetPos = new THREE.Vector3().copy(camera.position);
             monster.worldToLocal(targetPos);
             monsterEyes.forEach(eye => { eye.lookAt(targetPos); });
 
+            // Efek Denyutan Gendang Daging
             monster.children[0].scale.x = 1 + Math.sin(monsterTimer * 8) * 0.05;
             monster.children[0].scale.z = 1 + Math.cos(monsterTimer * 8) * 0.05;
         }
@@ -469,7 +547,6 @@
 
             updateMonsterAI();
 
-            // Sisa Jarak Ter-update aman
             let currentDistance = Math.round(totalDistance - Math.abs(camera.position.z));
             if (currentDistance < 0) currentDistance = 0;
             document.getElementById('distance').innerText = currentDistance;
@@ -495,7 +572,6 @@
             const txt = document.getElementById('overlay-text');
             overlay.classList.remove('hidden');
             
-            // Translasi layar Game Over / Win
             if (isWin) {
                 txt.innerText = translations[config.lang].win;
                 txt.style.color = "#00ff00";
@@ -509,13 +585,14 @@
             gameOver = false;
             monsterSpawned = false;
             triggeredMonologue2 = false;
+            
+            // Terapkan ulang lokalisasi teks pas mati/restart
+            applyGameplayLocalization();
+            
             camera.position.set(0, 2, 0);
             camera.rotation.set(0, 0, 0);
             monster.position.set(0, -10, 0);
             monsterState = "idle";
-            
-            // Terapkan ulang lokalisasi teks pas reset
-            applyLocalization();
             
             document.getElementById('screen-overlay').classList.add('hidden');
             document.body.requestPointerLock();
